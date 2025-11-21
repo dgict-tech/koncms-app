@@ -51,7 +51,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
         <div className="  p-5 bg-white">
        <img src={logol} alt=" Logo" className="h-8  ml-4" />
-          {/* <div className="text-[#bb0101] text-[16px]   font-bold">Ayouba App</div> */}
+          {/* <div className="text-[#bb0101] text-[16px]   font-bold">KonCMS App</div> */}
 
     
         

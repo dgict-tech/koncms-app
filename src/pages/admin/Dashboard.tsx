@@ -64,7 +64,7 @@ const Dashboard: React.FC = () => {
           <button onClick={() => setSidebarOpen(true)}>
             <Menu size={24} />
           </button>
-          <h1 className="ml-4 text-lg font-semibold">Ayouba Dashboard</h1>
+          <h1 className="ml-4 text-lg font-semibold">KonCMS Dashboard</h1>
         </div>
 
         <Routes location={location} key={location.pathname}>

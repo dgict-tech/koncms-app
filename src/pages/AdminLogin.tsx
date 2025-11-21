@@ -112,15 +112,15 @@ export default function AdminLogin() {
       <div className="relative min-h-screen flex items-center justify-center overflow-hidden max-w-5xl w-[90%] mx-auto">
         <div className="bg-white w-full max-w-md overflow-y-auto space-y-4 py-16 px-3 hide-scrollbar rounded-lg ">
           <div className="flex justify-center mb-6">
-            <img src={logo} alt="Ayouba Logo" className="h-10" />
+            <img src={logo} alt="KonCMS Logo" className="h-10" />
           </div>
 
           <h5 className="text-[25px] font-bold text-[#e1252f] mb-4 text-center">
             {forgotPassword
               ? "Reset Password"
               : isNew
-              ? "Create your Ayouba Account"
-              : "Welcome to Ayouba"}
+              ? "Create your KonCMS Account"
+              : "Welcome to KonCMS"}
           </h5>
 
           <p className="text-sm text-gray-400 mb-6 text-center">
