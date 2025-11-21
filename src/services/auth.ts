@@ -3,6 +3,7 @@
 import {
   registerAdmin as apiRegisterAdmin,
   loginAdmin as apiLoginAdmin,
+  API_URL,
 } from "./api";
 
 // ==== INTERFACES ====
@@ -78,9 +79,9 @@ export const getCurrentUser = () => {
 
 // ==== SOCIAL LOGIN ====
 export const handleGoogleSignIn = (): void => {
-  window.location.href = "http://localhost:3000/admin/google";
+  window.location.href = API_URL + "admin/google";
 };
 
 export const handleFacebookSignIn = (): void => {
-  window.location.href = "http://localhost:3000/admin/facebook";
+  window.location.href = API_URL + "admin/facebook";
 };

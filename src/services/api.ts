@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/services/api.ts
-const API_URL = "https://api.koncms.com/";
+export const API_URL = "https://api.koncms.com/";
 
 // ==== INTERFACES ====
 export interface RegisterAdminParams {

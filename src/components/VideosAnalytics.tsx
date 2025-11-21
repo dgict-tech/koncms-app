@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { youtubeAuthService, type ChannelToken } from "../services/youtubeAuth.service";
 import { fetchChannelVideos } from "../services/youtube.service";
 import yticon from "../assets/yticon.png";
-import { ArrowRight, PlayCircle } from "lucide-react";
+import { PlayCircle } from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -23,11 +23,7 @@ const VideoAnalytics: React.FC = () => {
   const [videos, setVideos] = useState<any[]>([]);
   const [loadingModal, setLoadingModal] = useState(false);
   const [dateRange, setDateRange] = useState<"7d" | "30d" | "90d" | "6m" | "1y" | "2y" | "5y">("30d");
-  const [confirmModal, setConfirmModal] = useState({
-    show: false,
-    channelId: null as string | null,
-    channelTitle: null as string | null,
-  });
+
 
   // Load stored channels
   useEffect(() => {
@@ -41,13 +37,6 @@ const VideoAnalytics: React.FC = () => {
   }, []);
 
   // Remove channel
-  const handleRemove = () => {
-    if (!confirmModal.channelId) return;
-    youtubeAuthService.removeChannel(confirmModal.channelId);
-    setChannels(prev => prev.filter(c => c.channelId !== confirmModal.channelId));
-    if (selectedChannel?.channelId === confirmModal.channelId) setSelectedChannel(null);
-    setConfirmModal({ show: false, channelId: null, channelTitle: null });
-  };
 
   // Compute date range
   const getDateRange = (filter: typeof dateRange) => {
@@ -155,7 +144,7 @@ const VideoAnalytics: React.FC = () => {
           ) : (
             !loadingModal && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
-                {videos.map((video, index) => {
+                {videos.map((video) => {
                   const chartData = {
                     labels: ["Views", "Revenue ($)"],
                     datasets: [{

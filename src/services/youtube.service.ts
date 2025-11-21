@@ -118,14 +118,14 @@ export const fetchChannelVideos = async (
 
   // Step 3: Fetch views for each video
   if (videos.length > 0) {
-    const videoIds = videos.map((v) => v.id).join(",");
+    const videoIds = videos.map((v: any) => v.id).join(",");
     const statsData = await fetchYouTubeData<any>(
       `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds}`,
       accessToken
     );
 
     statsData.items.forEach((item: any) => {
-      const video = videos.find((v) => v.id === item.id);
+      const video = videos.find((v: any) => v.id === item.id);
       if (video) video.views = Number(item.statistics.viewCount || 0);
     });
   }

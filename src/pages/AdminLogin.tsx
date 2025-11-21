@@ -2,7 +2,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState, useEffect } from "react";
 import type { FormEvent, ChangeEvent } from "react";
-import { registerAdmin, loginAdmin } from "../services/auth";
+// import { registerAdmin, loginAdmin } from "../services/auth";
+import {  loginAdmin } from "../services/auth";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import logo from "../assets/logo.png";
@@ -43,8 +44,8 @@ const TextInput = ({ value, placeholder, type = "text", onChange, required }: Te
 export default function AdminLogin() {
   const user = useAuth();
   const navigate = useNavigate();
-
-  const [isNew, setIsNew] = useState<boolean>(false);
+const isNew =false;
+  // const [isNew, setIsNew] = useState<boolean>(false);
   const [forgotPassword, setForgotPassword] = useState<boolean>(false);
   const [form, setForm] = useState<FormState>({
     email: "",
@@ -75,9 +76,12 @@ export default function AdminLogin() {
         setMessage("If this email exists, a password reset link has been sent.");
       } else {
       
-        const result: AuthResponse = isNew
-          ? await registerAdmin(form)
-          : await loginAdmin(form.email, form.password);
+        // const result: AuthResponse = isNew
+        //   ? await registerAdmin(form)
+        //   : await loginAdmin(form.email, form.password);
+
+         const result: AuthResponse = await loginAdmin(form.email, form.password);
+
 
         if (result.access_token) {
           localStorage.setItem("login_user", JSON.stringify(result));
