@@ -116,22 +116,22 @@ const isNew =false;
       <div className="relative min-h-screen flex items-center justify-center overflow-hidden max-w-5xl w-[90%] mx-auto">
         <div className="bg-white w-full max-w-md overflow-y-auto space-y-4 py-16 px-3 hide-scrollbar rounded-lg ">
           <div className="flex justify-center mb-6">
-            <img src={logo} alt="KonCMS Logo" className="h-10" />
+            <img src={logo} alt="KonCMS" className="h-10" />
           </div>
 
           <h5 className="text-[25px] font-bold text-[#e1252f] mb-4 text-center">
             {forgotPassword
               ? "Reset Password"
               : isNew
-              ? "Create your KonCMS Account"
-              : "Welcome to KonCMS"}
+              ? "Create your Account"
+              : ""}
           </h5>
 
           <p className="text-sm text-gray-400 mb-6 text-center">
             {forgotPassword
               ? "Enter your email to reset your password"
 
-              : "Login to your account"}
+              : "Login to your KONCMS account"}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">

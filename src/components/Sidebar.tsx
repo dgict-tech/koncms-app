@@ -50,7 +50,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <X size={22} />
           </button>
         <div className="  p-5 bg-white">
-       <img src={logol} alt=" Logo" className="h-8  ml-4" />
+       <img src={logol} alt=" Logo" className="h-4  ml-4" />
           {/* <div className="text-[#bb0101] text-[16px]   font-bold">KonCMS App</div> */}
 
     

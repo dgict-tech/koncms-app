@@ -71,6 +71,33 @@ export const youtubeAuthService = {
     window.gapi.client._initialized = true;
   },
 
+  refreshAllTokens: async (): Promise<void> => {
+    const channels = youtubeAuthService.getStoredChannels();
+
+    for (const channel of channels) {
+      if (!channel.refreshToken) continue;
+
+      try {
+        const { data } = await axios.post(`${BACKEND_URL}/refresh-token`, {
+          refreshToken: channel.refreshToken,
+        });
+
+        youtubeAuthService.saveChannel({
+          ...channel,
+          accessToken: data.access_token,
+          expiresAt: Date.now() + data.expires_in * 1000,
+        });
+
+        console.log(`Token refreshed for ${channel.channelTitle}`);
+      } catch (err) {
+        console.error(
+          `Failed to refresh token for ${channel.channelTitle}`,
+          err
+        );
+      }
+    }
+  },
+
   /**
    * Authenticate YouTube using access token (from backend)
    */
