@@ -77,6 +77,14 @@ export const getCurrentUser = () => {
   }
 };
 
+export const UserAuthorization = () => {
+  const user = getCurrentUser();
+  return {
+    headers: {
+      Authorization: "Bearer " + user.access_token,
+    },
+  };
+};
 // ==== SOCIAL LOGIN ====
 export const handleGoogleSignIn = (): void => {
   window.location.href = API_URL + "admin/google";

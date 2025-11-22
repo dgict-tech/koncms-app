@@ -2,6 +2,7 @@
 import axios from "axios";
 import { API_URL } from "./api";
 import { API_KEY } from "../components/YouTubeAnalytics";
+import { UserAuthorization } from "./auth";
 
 // Google OAuth config
 export const CLIENT_ID =
@@ -78,10 +79,14 @@ export const youtubeAuthService = {
       if (!channel.refresh_token) continue;
 
       try {
-        const { data } = await axios.post(`${BACKEND_URL}/refresh-token`, {
-          refresh_token: channel.refresh_token,
-          channelId: channel.channelId,
-        });
+        const { data } = await axios.post(
+          `${BACKEND_URL}/refresh-token`,
+          {
+            refresh_token: channel.refresh_token,
+            channelId: channel.channelId,
+          },
+          UserAuthorization()
+        );
 
         youtubeAuthService.saveChannel({
           ...channel,
@@ -162,6 +167,7 @@ export const youtubeAuthService = {
   getAuthUrl: async (): Promise<string> => {
     const { data } = await axios.get(`${BACKEND_URL}/google/auth-url`, {
       params: { scope: SCOPES },
+      headers: UserAuthorization().headers,
     });
     return data.url;
   },
@@ -170,7 +176,11 @@ export const youtubeAuthService = {
    * Exchange `code` → tokens (access_token, refresh_token)
    */
   exchangeCodeForTokens: async (code: string) => {
-    const { data } = await axios.post(`${BACKEND_URL}/exchange-code`, { code });
+    const { data } = await axios.post(
+      `${BACKEND_URL}/exchange-code`,
+      { code },
+      UserAuthorization()
+    );
     return data;
   },
 
@@ -179,7 +189,8 @@ export const youtubeAuthService = {
    */
   getAuthChannel: async (user: any) => {
     const { data } = await axios.get(
-      `${BACKEND_URL}/get-auth-channel/` + user.user.id
+      `${BACKEND_URL}/get-auth-channel/` + user.user.id,
+      UserAuthorization()
     );
     return data;
   },
@@ -190,7 +201,8 @@ export const youtubeAuthService = {
 
     try {
       const { data } = await axios.delete(
-        `${BACKEND_URL}/delete-channel/${user.user.id}/${channelId}`
+        `${BACKEND_URL}/delete-channel/${user.user.id}/${channelId}`,
+        UserAuthorization()
       );
       return data; // { success: boolean, message: string }
     } catch (err: any) {

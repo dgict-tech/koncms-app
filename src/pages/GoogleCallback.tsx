@@ -22,7 +22,7 @@ export default function GoogleCallback() {
     const exchangeCode = async () => {
       try {
         const tokenResponse = await youtubeAuthService.exchangeCodeForTokens(code);
-        console.log("YouTube tokens received:", tokenResponse);
+        // console.log("YouTube tokens received:", tokenResponse);
 
         if (tokenResponse.access_token) {
           await youtubeAuthService.authenticateToken(tokenResponse.access_token);
