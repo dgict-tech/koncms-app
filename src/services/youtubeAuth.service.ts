@@ -194,17 +194,14 @@ export const youtubeAuthService = {
     );
     return data;
   },
-  removeChannel: async (user: any, channelId: string) => {
-    if (!user || !user.user?.id) {
-      throw new Error("User not provided or invalid");
-    }
-
+  removeChannel: async (channelId: string) => {
     try {
       const { data } = await axios.delete(
-        `${BACKEND_URL}/delete-channel/${user.user.id}/${channelId}`,
+        `${BACKEND_URL}/delete-channel/${channelId}`,
         UserAuthorization()
       );
-      return data; // { success: boolean, message: string }
+      // window.location.reload();
+      return data;
     } catch (err: any) {
       console.error("Failed to remove YouTube channel:", err);
       throw err;
@@ -261,14 +258,6 @@ export const youtubeAuthService = {
       return [];
     }
   },
-
-  // removeChannel: async (channelId: string) => {
-  //   const updated = await youtubeAuthService.getStoredChannels();
-
-  //   updated.filter((c) => c.channelId !== channelId);
-
-  //   localStorage.setItem(CHANNELS_KEY, JSON.stringify(updated));
-  // },
 
   getTokenByChannelId: async (channelId: string): Promise<string | null> => {
     const channel = await youtubeAuthService.getStoredChannels();

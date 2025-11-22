@@ -72,7 +72,7 @@ export async function registerAdmin(
 }
 
 export async function loginAdmin(data: LoginAdminParams): Promise<ApiResponse> {
-  const res = await fetch(`${API_URL}/admin/login`, {
+  const res = await fetch(`${API_URL}admin/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),

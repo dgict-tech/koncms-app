@@ -83,7 +83,7 @@ const handleRemove = async () => {
 
   try {
     // 1️⃣ Call API to remove the channel from backend
-    const result = await youtubeAuthService.removeChannel(user, confirmModal.channelId);
+    const result = await youtubeAuthService.removeChannel( confirmModal.channelId);
     console.log(result.message);
 
     // 2️⃣ Update local state
