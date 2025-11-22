@@ -9,11 +9,11 @@ import YouTubeConnect from "../../components/YouTubeConnect";
 import Videos from "../../components/Videos";
 import VideoAnalytics from "../../components/VideosAnalytics";
 
-interface DashboardSetUpProps {
+export interface AccountSetUpProps {
   user: any;
 }
 
-const DashboardSetUp: React.FC<DashboardSetUpProps> = ({ user }) => {
+const DashboardSetUp: React.FC<AccountSetUpProps> = ({ user }) => {
    if (user == "null" || user ==null) {
     return null;
 
@@ -33,7 +33,7 @@ const DashboardSetUp: React.FC<DashboardSetUpProps> = ({ user }) => {
       </div>
 
       <div>
-        <YouTubeConnect />
+        <YouTubeConnect  user={user} />
       </div>
     </main>
   );

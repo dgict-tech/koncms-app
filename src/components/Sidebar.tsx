@@ -109,16 +109,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               Video Analytics
             </NavLink>
 
-              <NavLink
-              to="/account/create-project"
-              className={({ isActive }) =>
-                `${linkClass} ${isActive ? activeClass : ""} mb-3`
-              }
-              onClick={onClose}
-            >
-              <PlusSquare size={18} />
-              Channel Analytics
-            </NavLink>
+           
 
             
             <NavLink

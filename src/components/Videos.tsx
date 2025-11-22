@@ -15,17 +15,12 @@ const Videos: React.FC = () => {
   );
   const [videos, setVideos] = useState<any[]>([]);
   const [loadingModal, setLoadingModal] = useState(false);
-  const [confirmModal, setConfirmModal] = useState({
-    show: false,
-    channelId: null as string | null,
-    channelTitle: null as string | null,
-  });
-
+ 
   // Load scripts and stored channels
   useEffect(() => {
     const init = async () => {
       await youtubeAuthService.loadScripts();
-      const saved = youtubeAuthService.getStoredChannels();
+      const saved = await youtubeAuthService.getStoredChannels();
       setChannels(saved);
       if (saved.length > 0) setSelectedChannel(saved[0]);
     };
@@ -33,16 +28,7 @@ const Videos: React.FC = () => {
   }, []);
 
   // Remove channel
-  const handleRemove = () => {
-    if (!confirmModal.channelId) return;
-    youtubeAuthService.removeChannel(confirmModal.channelId);
-    setChannels((prev) =>
-      prev.filter((c) => c.channelId !== confirmModal.channelId)
-    );
-    if (selectedChannel?.channelId === confirmModal.channelId)
-      setSelectedChannel(null);
-    setConfirmModal({ show: false, channelId: null, channelTitle: null });
-  };
+
 
   // Fetch videos for selected channel
   useEffect(() => {
@@ -56,7 +42,7 @@ const Videos: React.FC = () => {
       setLoadingModal(true);
       try {
         const data = await fetchChannelVideos(
-          selectedChannel.accessToken,
+          selectedChannel.access_token,
           selectedChannel.channelId
         );
         setVideos(data || []); // In case API returns null or undefined
@@ -199,44 +185,7 @@ const Videos: React.FC = () => {
           )}
         </div>
       )}
-
-      {/* --- Confirmation Modal --- */}
-      {confirmModal.show && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-80 text-center shadow-lg">
-            <h2 className="text-lg font-semibold text-gray-800 mb-3">
-              Remove Channel
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to remove{" "}
-              <span className="font-medium text-red-600">
-                {confirmModal.channelTitle}
-              </span>
-              ?
-            </p>
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() =>
-                  setConfirmModal({
-                    show: false,
-                    channelId: null,
-                    channelTitle: null,
-                  })
-                }
-                className="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleRemove}
-                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md font-medium"
-              >
-                Yes, Remove
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+ 
 
       {/* --- Loading Modal --- */}
       {loadingModal && (

@@ -29,7 +29,7 @@ const VideoAnalytics: React.FC = () => {
   useEffect(() => {
     const init = async () => {
       await youtubeAuthService.loadScripts();
-      const saved = youtubeAuthService.getStoredChannels();
+      const saved = await youtubeAuthService.getStoredChannels();
       setChannels(saved);
       if (saved.length > 0) setSelectedChannel(saved[0]);
     };
@@ -71,7 +71,7 @@ const VideoAnalytics: React.FC = () => {
         const { start, end } = getDateRange(dateRange);
 
         const data = await fetchChannelVideos(
-          selectedChannel.accessToken,
+          selectedChannel.access_token,
           selectedChannel.channelId,
           20,
           start,

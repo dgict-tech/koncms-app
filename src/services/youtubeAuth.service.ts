@@ -26,15 +26,14 @@ declare global {
 
 export interface ChannelToken {
   channelId: string;
-  accessToken: string;
-  refreshToken?: string;
+  access_token: string;
+  refresh_token?: string;
   expiresAt?: number;
   channelTitle: string;
   thumbnail: string;
 }
-
-const CHANNELS_KEY = "yt_channels_tokens";
-
+export const CHANNELS_KEY = "yt_channels_tokens";
+// localStorage.removeItem("yt_channels_tokens");
 export const youtubeAuthService = {
   /**
    * Load Google API scripts once
@@ -72,23 +71,26 @@ export const youtubeAuthService = {
   },
 
   refreshAllTokens: async (): Promise<void> => {
-    const channels = youtubeAuthService.getStoredChannels();
+    const channels = await youtubeAuthService.getStoredChannels();
 
     for (const channel of channels) {
-      if (!channel.refreshToken) continue;
+      console.log(channel);
+      if (!channel.refresh_token) continue;
 
       try {
         const { data } = await axios.post(`${BACKEND_URL}/refresh-token`, {
-          refreshToken: channel.refreshToken,
+          refresh_token: channel.refresh_token,
+          channelId: channel.channelId,
         });
 
         youtubeAuthService.saveChannel({
           ...channel,
-          accessToken: data.access_token,
-          expiresAt: Date.now() + data.expires_in * 1000,
+          refresh_token: channel.refresh_token,
+          access_token: data.access_token,
+          expiresAt: data.expiresAt,
         });
 
-        console.log(`Token refreshed for ${channel.channelTitle}`);
+        // console.log(`Token refreshed for ${channel.channelTitle}`);
       } catch (err) {
         console.error(
           `Failed to refresh token for ${channel.channelTitle}`,
@@ -101,7 +103,10 @@ export const youtubeAuthService = {
   /**
    * Authenticate YouTube using access token (from backend)
    */
-  authenticateToken: async (access_token: string): Promise<any> => {
+  authenticateToken: async (
+    access_token: string,
+    refresh_token: string = ""
+  ): Promise<any> => {
     try {
       await youtubeAuthService.initGapiClient();
 
@@ -127,13 +132,14 @@ export const youtubeAuthService = {
 
       const channelToken: ChannelToken = {
         channelId: channel.id,
-        accessToken: access_token,
+        access_token: access_token,
+        refresh_token: refresh_token,
         channelTitle: channel.snippet.title,
         thumbnail: channel.snippet.thumbnails?.default?.url ?? "",
       };
 
       // Save channel
-      const all = youtubeAuthService.getStoredChannels();
+      const all = await youtubeAuthService.getStoredChannels();
       const updated = all.filter((c) => c.channelId !== channel.id);
       updated.push(channelToken);
 
@@ -169,47 +175,127 @@ export const youtubeAuthService = {
   },
 
   /**
+   * Exchange `code` → tokens (access_token, refresh_token)
+   */
+  getAuthChannel: async (user: any) => {
+    const { data } = await axios.get(
+      `${BACKEND_URL}/get-auth-channel/` + user.user.id
+    );
+    return data;
+  },
+  removeChannel: async (user: any, channelId: string) => {
+    if (!user || !user.user?.id) {
+      throw new Error("User not provided or invalid");
+    }
+
+    try {
+      const { data } = await axios.delete(
+        `${BACKEND_URL}/delete-channel/${user.user.id}/${channelId}`
+      );
+      return data; // { success: boolean, message: string }
+    } catch (err: any) {
+      console.error("Failed to remove YouTube channel:", err);
+      throw err;
+    }
+  },
+
+  loadAndSaveChannels: async (user: any) => {
+    try {
+      const channels = await youtubeAuthService.getAuthChannel(user);
+
+      if (!Array.isArray(channels)) {
+        console.error("Invalid channel response:", channels);
+        return [];
+      }
+
+      channels.forEach((channel) => {
+        youtubeAuthService.saveChannel(channel);
+      });
+
+      // console.log("All channels saved to localStorage:", channels);
+      return channels;
+    } catch (error) {
+      console.error("Failed to load channels:", error);
+    }
+  },
+
+  /**
    * Local storage helpers
    */
-  getStoredChannels: (): ChannelToken[] => {
+  getStoredChannels: async (user: any = null): Promise<ChannelToken[]> => {
     try {
+      // If user exists → fetch from backend then save to localStorage
+      if (user !== null) {
+        const channels =
+          (await youtubeAuthService.loadAndSaveChannels(user)) || [];
+
+        console.log("channels", channels);
+
+        // If backend has no channels → clear localStorage
+        if (channels.length === 0) {
+          localStorage.removeItem(CHANNELS_KEY);
+          return [];
+        }
+
+        // Return backend channels
+        return channels;
+      }
+
+      // No user → load from localStorage
       const raw = localStorage.getItem(CHANNELS_KEY);
       return raw ? JSON.parse(raw) : [];
-    } catch {
+    } catch (error) {
+      console.error("getStoredChannels error:", error);
       return [];
     }
   },
 
-  removeChannel: (channelId: string) => {
-    const updated = youtubeAuthService
-      .getStoredChannels()
-      .filter((c) => c.channelId !== channelId);
+  // removeChannel: async (channelId: string) => {
+  //   const updated = await youtubeAuthService.getStoredChannels();
 
-    localStorage.setItem(CHANNELS_KEY, JSON.stringify(updated));
+  //   updated.filter((c) => c.channelId !== channelId);
+
+  //   localStorage.setItem(CHANNELS_KEY, JSON.stringify(updated));
+  // },
+
+  getTokenByChannelId: async (channelId: string): Promise<string | null> => {
+    const channel = await youtubeAuthService.getStoredChannels();
+
+    const dchanel = channel.find((c) => c.channelId === channelId);
+
+    return dchanel ? dchanel.access_token : null;
   },
 
-  getTokenByChannelId: (channelId: string): string | null => {
-    const channel = youtubeAuthService
-      .getStoredChannels()
-      .find((c) => c.channelId === channelId);
+  saveChannel: async (channel: ChannelToken) => {
+    const stored = await youtubeAuthService.getStoredChannels();
 
-    return channel ? channel.accessToken : null;
-  },
-
-  saveChannel: (channel: ChannelToken) => {
-    const all = youtubeAuthService.getStoredChannels();
-    const updated = all.filter((c) => c.channelId !== channel.channelId);
-    updated.push(channel);
-
-    localStorage.setItem(CHANNELS_KEY, JSON.stringify(updated));
-  },
-
-  getChannel: (channelId: string): ChannelToken | null => {
-    return (
-      youtubeAuthService
-        .getStoredChannels()
-        .find((c) => c.channelId === channelId) ?? null
+    // Find if this channel already exists
+    const existingIndex = stored.findIndex(
+      (c) => c.channelId === channel.channelId
     );
+
+    if (existingIndex !== -1) {
+      // s("🔄 Updating existing channel:", channel.channelTitle);
+
+      // Replace existing entry
+      stored[existingIndex] = {
+        ...stored[existingIndex], // keep old fields like refresh_token
+        ...channel, // overwrite with new data
+      };
+    } else {
+      // console.log("🆕 Adding new channel:", channel.channelTitle);
+
+      // Add as a new entry
+      stored.push(channel);
+    }
+
+    localStorage.setItem(CHANNELS_KEY, JSON.stringify(stored));
+    // console.log("💾 Channels saved →", stored);
+  },
+
+  getChannel: async (channelId: string): Promise<ChannelToken | null> => {
+    const channel = await youtubeAuthService.getStoredChannels();
+    return channel.find((c) => c.channelId === channelId) ?? null;
   },
 
   /**
