@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useMemo, useState } from "react";
-import axios from "axios";
 import { BACKEND_URL } from "../services/youtubeAuth.service";
 import { UserAuthorization } from "../services/auth";
 import {

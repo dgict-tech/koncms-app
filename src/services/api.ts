@@ -3,6 +3,7 @@
 // src/services/api.ts
 
 import axios, { type AxiosRequestConfig, type AxiosResponse } from "axios";
+import { logout } from "./auth";
 
 // export const API_URL = "https://api.koncms.com/";
 export const API_URL = "http://localhost:4009/";
@@ -76,7 +77,7 @@ export async function registerAdmin(
 ): Promise<ApiResponse> {
   const res = await FetchRequest(`${API_URL}/admin/register`, {
     method: "POST",
-    body: JSON.stringify(data),
+    body: data,
   });
   return handleResponse<ApiResponse>(res);
 }
@@ -84,7 +85,7 @@ export async function registerAdmin(
 export async function loginAdmin(data: LoginAdminParams): Promise<ApiResponse> {
   const res = await FetchRequest(`${API_URL}admin/login`, {
     method: "POST",
-    body: JSON.stringify(data),
+    body: data,
   });
   console.log(res);
   return handleResponse<ApiResponse>(res);
@@ -96,8 +97,17 @@ export async function Axios_post(
   data: any,
   header: AxiosRequestConfig
 ): Promise<AxiosResponse<any>> {
-  const response = await axios.post(url, data, header);
-  return response;
+  try {
+    const response = await axios.post(url, data, header);
+    return response;
+  } catch (error: any) {
+    if (error.response?.status === 401) {
+      console.warn("Unauthorized (401) response received!");
+      logout();
+      // Do logout or refresh token here if needed
+    }
+    throw error; // re-throw so the caller can handle it
+  }
 }
 
 // GET request
@@ -105,22 +115,40 @@ export async function Axios_get(
   url: string,
   header: AxiosRequestConfig
 ): Promise<AxiosResponse<any>> {
-  const response = await axios.get(url, header); // fixed to GET
-  return response;
+  try {
+    const response = await axios.get(url, header); // fixed to GET
+    return response;
+  } catch (error: any) {
+    if (error.response?.status === 401) {
+      console.warn("Unauthorized (401) response received!");
+      logout();
+      // Do logout or refresh token here if needed
+    }
+    throw error; // re-throw so the caller can handle it
+  }
 }
 
 export async function Axios_delete(
   url: string,
   header: AxiosRequestConfig
 ): Promise<AxiosResponse<any>> {
-  const response = await axios.delete(url, header); // fixed to GET
-  return response;
+  try {
+    const response = await axios.delete(url, header); // fixed to GET
+    return response;
+  } catch (error: any) {
+    if (error.response?.status === 401) {
+      console.warn("Unauthorized (401) response received!");
+      logout();
+      // Do logout or refresh token here if needed
+    }
+    throw error; // re-throw so the caller can handle it
+  }
 }
 
-export async function FetchRequest<T = any>(
+export async function FetchRequest(
   url: string,
   options: FetchOptions = {}
-): Promise<T> {
+): Promise<any> {
   const { method = "GET", headers = {}, body } = options;
 
   const res = await fetch(url, {
@@ -132,19 +160,11 @@ export async function FetchRequest<T = any>(
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  // if (!res.ok) {
-  //   const errorText = await res.text();
-  //   throw new Error(errorText || "Fetch request failed");
-  // }
-
   if (!res.ok) {
     if (res.status === 401) {
-      // console.log("ccccc", res);
-      // Unauthorized → refresh all tokens
-      alert("401 token expired");
+      logout();
     }
   }
 
-  const data: T = await res.json();
-  return data;
+  return res;
 }
