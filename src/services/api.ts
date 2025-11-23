@@ -1,8 +1,20 @@
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/services/api.ts
-export const API_URL = "https://api.koncms.com/";
+
+import axios, { type AxiosRequestConfig, type AxiosResponse } from "axios";
+
+// export const API_URL = "https://api.koncms.com/";
+export const API_URL = "http://localhost:4009/";
 
 // ==== INTERFACES ====
+
+export interface FetchOptions {
+  method?: "GET" | "POST" | "PUT" | "DELETE";
+  headers?: Record<string, string>;
+  body?: any;
+}
+
 export interface RegisterAdminParams {
   email: string;
   password: string;
@@ -48,6 +60,7 @@ export interface ApiResponse<T = any> {
 }
 
 // ==== GENERIC HELPER ====
+
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const text = await res.text();
@@ -55,83 +68,83 @@ async function handleResponse<T>(res: Response): Promise<T> {
     const errorText = result?.message;
     throw new Error(errorText || `Request failed with status ${res.status}`);
   }
-
   return res.json() as Promise<T>;
 }
 
-// ==== AUTH ====
 export async function registerAdmin(
   data: RegisterAdminParams
 ): Promise<ApiResponse> {
-  const res = await fetch(`${API_URL}/admin/register`, {
+  const res = await FetchRequest(`${API_URL}/admin/register`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
   return handleResponse<ApiResponse>(res);
 }
 
 export async function loginAdmin(data: LoginAdminParams): Promise<ApiResponse> {
-  const res = await fetch(`${API_URL}admin/login`, {
+  const res = await FetchRequest(`${API_URL}admin/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-
+  console.log(res);
   return handleResponse<ApiResponse>(res);
 }
 
-// ==== PROJECTS ====
-export async function getProjects(): Promise<Project[]> {
-  const res = await fetch(`${API_URL}/project/all`);
-  return handleResponse<Project[]>(res);
+// POST request
+export async function Axios_post(
+  url: string,
+  data: any,
+  header: AxiosRequestConfig
+): Promise<AxiosResponse<any>> {
+  const response = await axios.post(url, data, header);
+  return response;
 }
 
-export async function createProject(data: Partial<Project>): Promise<Project> {
-  const res = await fetch(`${API_URL}/project/create`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
+// GET request
+export async function Axios_get(
+  url: string,
+  header: AxiosRequestConfig
+): Promise<AxiosResponse<any>> {
+  const response = await axios.get(url, header); // fixed to GET
+  return response;
+}
+
+export async function Axios_delete(
+  url: string,
+  header: AxiosRequestConfig
+): Promise<AxiosResponse<any>> {
+  const response = await axios.delete(url, header); // fixed to GET
+  return response;
+}
+
+export async function FetchRequest<T = any>(
+  url: string,
+  options: FetchOptions = {}
+): Promise<T> {
+  const { method = "GET", headers = {}, body } = options;
+
+  const res = await fetch(url, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      ...headers,
+    },
+    body: body ? JSON.stringify(body) : undefined,
   });
-  return handleResponse<Project>(res);
-}
 
-// ==== QUESTIONS ====
-export async function getQuestionsByProject(
-  projectId: string
-): Promise<Question[]> {
-  const res = await fetch(
-    `${API_URL}/question/by-project?projectId=${projectId}`
-  );
-  return handleResponse<Question[]>(res);
-}
+  // if (!res.ok) {
+  //   const errorText = await res.text();
+  //   throw new Error(errorText || "Fetch request failed");
+  // }
 
-export async function createQuestion(
-  data: Partial<Question>
-): Promise<Question> {
-  const res = await fetch(`${API_URL}/question/create`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  return handleResponse<Question>(res);
-}
+  if (!res.ok) {
+    if (res.status === 401) {
+      // console.log("ccccc", res);
+      // Unauthorized → refresh all tokens
+      alert("401 token expired");
+    }
+  }
 
-// ==== CANDIDATES ====
-export async function submitCandidate(data: Candidate): Promise<Candidate> {
-  const res = await fetch(`${API_URL}/candidate/create`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  return handleResponse<Candidate>(res);
-}
-
-export async function getCandidatesByProject(
-  projectId: string
-): Promise<Candidate[]> {
-  const res = await fetch(
-    `${API_URL}/candidate/by-project?projectId=${projectId}`
-  );
-  return handleResponse<Candidate[]>(res);
+  const data: T = await res.json();
+  return data;
 }

@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import axios from "axios";
-import { API_URL } from "./api";
+import { API_URL, Axios_delete, Axios_get, Axios_post } from "./api";
 import { API_KEY } from "../components/YouTubeAnalytics";
 import { UserAuthorization } from "./auth";
 
@@ -79,7 +78,7 @@ export const youtubeAuthService = {
       if (!channel.refresh_token) continue;
 
       try {
-        const { data } = await axios.post(
+        const { data } = await Axios_post(
           `${BACKEND_URL}/refresh-token`,
           {
             refresh_token: channel.refresh_token,
@@ -165,7 +164,7 @@ export const youtubeAuthService = {
    * Backend endpoint → Get Google OAuth URL
    */
   getAuthUrl: async (): Promise<string> => {
-    const { data } = await axios.get(`${BACKEND_URL}/google/auth-url`, {
+    const { data } = await Axios_get(`${BACKEND_URL}/google/auth-url`, {
       params: { scope: SCOPES },
       headers: UserAuthorization().headers,
     });
@@ -176,7 +175,7 @@ export const youtubeAuthService = {
    * Exchange `code` → tokens (access_token, refresh_token)
    */
   exchangeCodeForTokens: async (code: string) => {
-    const { data } = await axios.post(
+    const { data } = await Axios_post(
       `${BACKEND_URL}/exchange-code`,
       { code },
       UserAuthorization()
@@ -188,7 +187,7 @@ export const youtubeAuthService = {
    * Exchange `code` → tokens (access_token, refresh_token)
    */
   getAuthChannel: async (user: any) => {
-    const { data } = await axios.get(
+    const { data } = await Axios_get(
       `${BACKEND_URL}/get-auth-channel/` + user.user.id,
       UserAuthorization()
     );
@@ -196,7 +195,7 @@ export const youtubeAuthService = {
   },
   removeChannel: async (channelId: string) => {
     try {
-      const { data } = await axios.delete(
+      const { data } = await Axios_delete(
         `${BACKEND_URL}/delete-channel/${channelId}`,
         UserAuthorization()
       );

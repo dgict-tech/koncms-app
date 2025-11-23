@@ -8,20 +8,22 @@ import { Menu } from "lucide-react";
 import YouTubeConnect from "../../components/YouTubeConnect";
 import Videos from "../../components/Videos";
 import VideoAnalytics from "../../components/VideosAnalytics";
+import CreateAdminAccount from "../../components/CreateAdminAccount";
+import AllAdminAccount from "../../components/AllAdminAccount";
+
+import CreateUserAccount from "../../components/CreateUserAccount";
+import AllUserAccount from "../../components/AllUserAccount";
 
 export interface AccountSetUpProps {
   user: any;
 }
 
 const DashboardSetUp: React.FC<AccountSetUpProps> = ({ user }) => {
-   if (user == "null" || user ==null) {
+  if (user == "null" || user == null) {
     return null;
-
-   }
-
+  }
 
   const fullName = `${user.user.first_name} ${user.user.last_name}`;
-
 
   return (
     <main className="flex-1 p-6 bg-gray-50 min-h-screen">
@@ -29,11 +31,12 @@ const DashboardSetUp: React.FC<AccountSetUpProps> = ({ user }) => {
         <h1 className="text-3xl font-semibold text-gray-800 mb-2">
           Welcome, <span className="text-red-600">{fullName}</span> 👋
         </h1>
-      
       </div>
 
       <div>
-        <YouTubeConnect  user={user} />
+        {user.user.role !== "user" && <YouTubeConnect user={user} />}
+
+        {user.user.role == "user" && <p>Videos and Income</p>}
       </div>
     </main>
   );
@@ -55,7 +58,11 @@ const Dashboard: React.FC = () => {
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        user={user}
+      />
 
       {/* Main Content */}
       <div className="flex-1 md:pl-72">
@@ -94,7 +101,7 @@ const Dashboard: React.FC = () => {
             }
           />
 
-           <Route
+          <Route
             path="/videos-analytics"
             element={
               <AuthGuard>
@@ -102,9 +109,43 @@ const Dashboard: React.FC = () => {
               </AuthGuard>
             }
           />
-        </Routes>
 
-        
+          <Route
+            path="/new-admin"
+            element={
+              <AuthGuard>
+                <CreateAdminAccount user={user} />
+              </AuthGuard>
+            }
+          />
+
+          <Route
+            path="/all-admin"
+            element={
+              <AuthGuard>
+                <AllAdminAccount />
+              </AuthGuard>
+            }
+          />
+
+          <Route
+            path="/new-user"
+            element={
+              <AuthGuard>
+                <CreateUserAccount user={user} />
+              </AuthGuard>
+            }
+          />
+
+          <Route
+            path="/all-users"
+            element={
+              <AuthGuard>
+                <AllUserAccount />
+              </AuthGuard>
+            }
+          />
+        </Routes>
       </div>
     </div>
   );
