@@ -8,27 +8,56 @@ import { fetchChannelVideos } from "../services/youtube.service";
 import yticon from "../assets/yticon.png";
 import { ArrowRight, PlayCircle } from "lucide-react";
 
-const Videos: React.FC = () => {
+const Videos: React.FC<{ user: any }> = ({ user }) => {
   const [channels, setChannels] = useState<ChannelToken[]>([]);
   const [selectedChannel, setSelectedChannel] = useState<ChannelToken | null>(
     null
   );
   const [videos, setVideos] = useState<any[]>([]);
   const [loadingModal, setLoadingModal] = useState(false);
- 
-  // Load scripts and stored channels
+
+  // Debug: Log channels whenever they change
+  useEffect(() => {
+    console.log("Channels state updated:", channels);
+  }, [channels]);
+
+  // Load scripts and stored channels (fetch from backend when `user` is available)
   useEffect(() => {
     const init = async () => {
       await youtubeAuthService.loadScripts();
-      const saved = await youtubeAuthService.getStoredChannels();
-      setChannels(saved);
-      if (saved.length > 0) setSelectedChannel(saved[0]);
+      // Pass the `user` prop so backend channels are fetched and saved to localStorage
+      const savedChannels = await youtubeAuthService.getStoredChannels(
+        user ?? null
+      );
+      console.log("Loaded channels:", savedChannels);
+      setChannels(savedChannels || []);
+
+      // Only set a default selected channel when none is currently selected
+      setSelectedChannel(
+        (prev) =>
+          prev ??
+          (savedChannels && savedChannels.length > 0 ? savedChannels[0] : null)
+      );
     };
-    init();
-  }, []);
+
+    // Ensure the DOM is ready before running init. If the document is still
+    // loading, wait for DOMContentLoaded; otherwise run immediately.
+    const runInitWhenReady = () => {
+      if (document.readyState === "loading") {
+        const onReady = () => init();
+        document.addEventListener("DOMContentLoaded", onReady, { once: true });
+        return () => document.removeEventListener("DOMContentLoaded", onReady);
+      } else {
+        init();
+        return undefined;
+      }
+    };
+
+    const cleanup = runInitWhenReady();
+    return cleanup;
+  }, [user]);
 
   // Remove channel
-
 
   // Fetch videos for selected channel
   useEffect(() => {
@@ -185,7 +214,6 @@ const Videos: React.FC = () => {
           )}
         </div>
       )}
- 
 
       {/* --- Loading Modal --- */}
       {loadingModal && (

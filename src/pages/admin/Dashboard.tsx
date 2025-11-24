@@ -96,7 +96,7 @@ const Dashboard: React.FC = () => {
             path="/videos"
             element={
               <AuthGuard>
-                <Videos />
+                <Videos user={user} />
               </AuthGuard>
             }
           />

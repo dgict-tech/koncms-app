@@ -9,7 +9,6 @@ export const API_URL = "https://api.koncms.com/";
 // export const API_URL = "http://localhost:4009/";
 
 // ==== INTERFACES ====
-
 export interface FetchOptions {
   method?: "GET" | "POST" | "PUT" | "DELETE";
   headers?: Record<string, string>;

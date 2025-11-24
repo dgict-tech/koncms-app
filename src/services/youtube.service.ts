@@ -71,9 +71,11 @@ export const getDateRange = (
  */
 export const fetchYouTubeData = async <T>(
   url: string,
-  access_token: string
+  access_token: string,
+  channelId: string
 ): Promise<T> => {
   try {
+    alert(access_token);
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${access_token}` },
     });
@@ -82,13 +84,16 @@ export const fetchYouTubeData = async <T>(
       if (res.status === 401) {
         // console.log("ccccc", res);
         // Unauthorized → refresh all tokens
-        await youtubeAuthService.refreshAllTokens();
-        // Optionally retry request with the refreshed token
-        const channel = await youtubeAuthService.getStoredChannels();
-        const refresh_token = channel[0]?.access_token; // pick relevant channel
+        // alert(2);
+        // alert(channelId);
+        const channel = await youtubeAuthService.refreshChannelToken(channelId);
 
-        if (!refresh_token) throw new Error("No valid token after refresh");
-        return fetchYouTubeData<T>(url, refresh_token);
+        console.log("Refreshing token for channel:", channel);
+
+        if (!channel?.access_token)
+          throw new Error("No valid token after refresh");
+
+        return fetchYouTubeData<T>(url, channel.access_token, channelId);
       }
       throw new Error(`YouTube API Error: ${res.statusText}`);
     }
@@ -114,7 +119,8 @@ export const fetchChannelVideos = async (
   // Step 1: Get the upload playlist ID
   const channelData = await fetchYouTubeData<any>(
     `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${channelId}`,
-    access_token
+    access_token,
+    channelId
   );
 
   const uploadsPlaylistId =
@@ -125,7 +131,8 @@ export const fetchChannelVideos = async (
   // Step 2: Fetch videos from the upload playlist
   const playlistData = await fetchYouTubeData<any>(
     `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=${uploadsPlaylistId}&maxResults=${maxResults}`,
-    access_token
+    access_token,
+    channelId
   );
 
   const videos = playlistData.items.map((item: any) => ({
@@ -143,7 +150,8 @@ export const fetchChannelVideos = async (
     const videoIds = videos.map((v: any) => v.id).join(",");
     const statsData = await fetchYouTubeData<any>(
       `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds}`,
-      access_token
+      access_token,
+      channelId
     );
 
     statsData.items.forEach((item: any) => {
@@ -158,7 +166,8 @@ export const fetchChannelVideos = async (
       try {
         const response: any = await fetchYouTubeData<any>(
           `https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==MINE&startDate=${analyticsStartDate}&endDate=${analyticsEndDate}&metrics=estimatedRevenue&dimensions=video&filters=video==${video.id}`,
-          access_token
+          access_token,
+          channelId
         );
         const revenueValue = response.rows?.[0]?.[1] ?? 0;
         const revenueNumber =
@@ -197,7 +206,7 @@ export const parseAnalyticsData = (response: any) => {
  */
 export const fetchTopVideos = async (access_token: string, maxResults = 10) => {
   const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&maxResults=${maxResults}`;
-  const data = await fetchYouTubeData<any>(url, access_token);
+  const data = await fetchYouTubeData<any>(url, access_token, "");
   return data.items.map((item: any) => ({
     id: item.id,
     title: item.snippet?.title,
@@ -218,5 +227,5 @@ export const fetchChannelAnalytics = async (
   channelId: string
 ) => {
   const url = `https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==${channelId}&startDate=${startDate}&endDate=${endDate}&metrics=views,estimatedMinutesWatched,averageViewDuration,subscribersGained,subscribersLost`;
-  return fetchYouTubeData<any>(url, access_token);
+  return fetchYouTubeData<any>(url, access_token, channelId);
 };

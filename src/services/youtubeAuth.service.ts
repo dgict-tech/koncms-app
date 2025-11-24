@@ -70,7 +70,7 @@ export const youtubeAuthService = {
     window.gapi.client._initialized = true;
   },
 
-  refreshAllTokens: async (): Promise<void> => {
+  refreshAllTokens: async (): Promise<ChannelToken | undefined> => {
     const channels = await youtubeAuthService.getStoredChannels();
 
     for (const channel of channels) {
@@ -86,14 +86,14 @@ export const youtubeAuthService = {
           },
           UserAuthorization()
         );
-
-        youtubeAuthService.saveChannel({
+        const newChannel = {
           ...channel,
           refresh_token: channel.refresh_token,
           access_token: data.access_token,
           expiresAt: data.expiresAt,
-        });
-
+        };
+        youtubeAuthService.saveChannel(newChannel);
+        return newChannel;
         // console.log(`Token refreshed for ${channel.channelTitle}`);
       } catch (err) {
         console.error(
@@ -101,6 +101,39 @@ export const youtubeAuthService = {
           err
         );
       }
+    }
+  },
+
+  refreshChannelToken: async (
+    channelId: string
+  ): Promise<ChannelToken | undefined> => {
+    // get  the stored channels and get channel with access_token
+    const channels = await youtubeAuthService.getStoredChannels();
+
+    const channel = channels.find((c) => c.channelId === channelId);
+    if (!channel) return;
+
+    alert("Refreshing token for channel:" + channel.channelTitle);
+
+    try {
+      const { data } = await Axios_post(
+        `${BACKEND_URL}/refresh-token`,
+        {
+          refresh_token: channel.refresh_token,
+          channelId: channel.channelId,
+        },
+        UserAuthorization()
+      );
+      const newChannel = {
+        ...channel,
+        refresh_token: channel.refresh_token,
+        access_token: data.access_token,
+        expiresAt: data.expiresAt,
+      };
+      youtubeAuthService.saveChannel(newChannel);
+      return newChannel;
+    } catch (err) {
+      console.error(`Failed to refresh token for ${channel.channelTitle}`, err);
     }
   },
 
@@ -215,7 +248,7 @@ export const youtubeAuthService = {
         console.error("Invalid channel response:", channels);
         return [];
       }
-
+      localStorage.removeItem(CHANNELS_KEY);
       channels.forEach((channel) => {
         youtubeAuthService.saveChannel(channel);
       });
@@ -241,7 +274,6 @@ export const youtubeAuthService = {
 
         // If backend has no channels → clear localStorage
         if (channels.length === 0) {
-          localStorage.removeItem(CHANNELS_KEY);
           return [];
         }
 
@@ -251,7 +283,10 @@ export const youtubeAuthService = {
 
       // No user → load from localStorage
       const raw = localStorage.getItem(CHANNELS_KEY);
-      return raw ? JSON.parse(raw) : [];
+      // console.log("raw channels from localStorage:", raw);
+      const channels = raw ? JSON.parse(raw) : [];
+      // console.log("Loaded channels from localStorage:", channels);
+      return channels;
     } catch (error) {
       console.error("getStoredChannels error:", error);
       return [];
