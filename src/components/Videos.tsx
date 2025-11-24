@@ -39,22 +39,7 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
           (savedChannels && savedChannels.length > 0 ? savedChannels[0] : null)
       );
     };
-
-    // Ensure the DOM is ready before running init. If the document is still
-    // loading, wait for DOMContentLoaded; otherwise run immediately.
-    const runInitWhenReady = () => {
-      if (document.readyState === "loading") {
-        const onReady = () => init();
-        document.addEventListener("DOMContentLoaded", onReady, { once: true });
-        return () => document.removeEventListener("DOMContentLoaded", onReady);
-      } else {
-        init();
-        return undefined;
-      }
-    };
-
-    const cleanup = runInitWhenReady();
-    return cleanup;
+    init();
   }, [user]);
 
   // Remove channel

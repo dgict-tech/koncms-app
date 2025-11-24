@@ -113,7 +113,7 @@ export const youtubeAuthService = {
     const channel = channels.find((c) => c.channelId === channelId);
     if (!channel) return;
 
-    alert("Refreshing token for channel:" + channel.channelTitle);
+    // alert("Refreshing token for channel:" + channel.channelTitle);
 
     try {
       const { data } = await Axios_post(
@@ -263,36 +263,46 @@ export const youtubeAuthService = {
   /**
    * Local storage helpers
    */
-  getStoredChannels: async (user: any = null): Promise<ChannelToken[]> => {
+  getStoredChannels: async (user?: any): Promise<ChannelToken[]> => {
     try {
-      // If user exists → fetch from backend then save to localStorage
-      if (user !== null) {
-        const channels =
+      // 1️⃣ Load from localStorage first
+      const raw = localStorage.getItem(CHANNELS_KEY);
+      const localChannels: ChannelToken[] = raw ? JSON.parse(raw) : [];
+
+      // 2️⃣ If user exists → fetch backend channels
+      if (user) {
+        const backendChannels =
           (await youtubeAuthService.loadAndSaveChannels(user)) || [];
 
-        console.log("channels", channels);
+        // 3️⃣ Merge backend → local (backend has priority)
+        backendChannels.forEach((backend) => {
+          const existingIndex = localChannels.findIndex(
+            (c) => c.channelId === backend.channelId
+          );
 
-        // If backend has no channels → clear localStorage
-        if (channels.length === 0) {
-          return [];
-        }
+          if (existingIndex !== -1) {
+            // Update existing entry
+            localChannels[existingIndex] = {
+              ...localChannels[existingIndex],
+              ...backend, // backend overwrites
+            };
+          } else {
+            // Add new channel from backend
+            localChannels.push(backend);
+          }
+        });
 
-        // Return backend channels
-        return channels;
+        // 4️⃣ Save merged result back to localStorage
+        localStorage.setItem(CHANNELS_KEY, JSON.stringify(localChannels));
       }
 
-      // No user → load from localStorage
-      const raw = localStorage.getItem(CHANNELS_KEY);
-      // console.log("raw channels from localStorage:", raw);
-      const channels = raw ? JSON.parse(raw) : [];
-      // console.log("Loaded channels from localStorage:", channels);
-      return channels;
+      // 5️⃣ Return fully updated channels
+      return localChannels;
     } catch (error) {
       console.error("getStoredChannels error:", error);
       return [];
     }
   },
-
   getTokenByChannelId: async (channelId: string): Promise<string | null> => {
     const channel = await youtubeAuthService.getStoredChannels();
 
@@ -302,32 +312,31 @@ export const youtubeAuthService = {
   },
 
   saveChannel: async (channel: ChannelToken) => {
-    const stored = await youtubeAuthService.getStoredChannels();
+    const key = CHANNELS_KEY;
 
-    // Find if this channel already exists
+    // Load existing channels
+    const raw = localStorage.getItem(key);
+    const stored: ChannelToken[] = raw ? JSON.parse(raw) : [];
+
+    // Check if channel exists
     const existingIndex = stored.findIndex(
       (c) => c.channelId === channel.channelId
     );
 
     if (existingIndex !== -1) {
-      // s("🔄 Updating existing channel:", channel.channelTitle);
-
-      // Replace existing entry
+      // Update existing
       stored[existingIndex] = {
-        ...stored[existingIndex], // keep old fields like refresh_token
-        ...channel, // overwrite with new data
+        ...stored[existingIndex],
+        ...channel,
       };
     } else {
-      // console.log("🆕 Adding new channel:", channel.channelTitle);
-
-      // Add as a new entry
+      // Add new
       stored.push(channel);
     }
 
-    localStorage.setItem(CHANNELS_KEY, JSON.stringify(stored));
-    // console.log("💾 Channels saved →", stored);
+    // Save back
+    localStorage.setItem(key, JSON.stringify(stored));
   },
-
   getChannel: async (channelId: string): Promise<ChannelToken | null> => {
     const channel = await youtubeAuthService.getStoredChannels();
     return channel.find((c) => c.channelId === channelId) ?? null;

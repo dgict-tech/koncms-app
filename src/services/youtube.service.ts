@@ -75,17 +75,13 @@ export const fetchYouTubeData = async <T>(
   channelId: string
 ): Promise<T> => {
   try {
-    alert(access_token);
+    // alert(access_token);
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${access_token}` },
     });
 
     if (!res.ok) {
       if (res.status === 401) {
-        // console.log("ccccc", res);
-        // Unauthorized → refresh all tokens
-        // alert(2);
-        // alert(channelId);
         const channel = await youtubeAuthService.refreshChannelToken(channelId);
 
         console.log("Refreshing token for channel:", channel);
