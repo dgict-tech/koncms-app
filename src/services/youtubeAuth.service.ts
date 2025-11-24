@@ -334,6 +334,7 @@ export const youtubeAuthService = {
       stored.push(channel);
     }
 
+    console.log("Channels after save:", stored);
     // Save back
     localStorage.setItem(key, JSON.stringify(stored));
   },

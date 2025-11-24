@@ -15,6 +15,67 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
   );
   const [videos, setVideos] = useState<any[]>([]);
   const [loadingModal, setLoadingModal] = useState(false);
+  // Revenue state
+  const [videoRevenues, setVideoRevenues] = useState<{ [id: string]: number }>(
+    {}
+  );
+  const [loadingRevenue, setLoadingRevenue] = useState(false);
+  const [revenueError, setRevenueError] = useState("");
+  // Fetch revenue for each video after videos are loaded
+  useEffect(() => {
+    const fetchRevenues = async () => {
+      window.gapi.client.setToken({
+        access_token: selectedChannel?.access_token,
+      });
+      await window.gapi.client.load("youtubeAnalytics", "v2");
+      await window.gapi.client.load("youtube", "v3");
+
+      if (!selectedChannel || videos.length === 0) {
+        setVideoRevenues({});
+        return;
+      }
+      setLoadingRevenue(true);
+      setRevenueError("");
+      const analyticsStartDate = "2023-01-01"; // You can make this dynamic
+      const analyticsEndDate = "2025-12-31";
+      const newRevenues: { [id: string]: number } = {};
+      try {
+        // Limit to first 20 videos for quota
+        // const limitedVideos = videos.slice(0, 20);
+        // for (const video of limitedVideos) {
+        for (let index = 0; index < videos.length; index++) {
+          const video = videos[index];
+
+          const response =
+            await window.gapi.client.youtubeAnalytics.reports.query({
+              ids: "channel==MINE",
+              startDate: analyticsStartDate,
+              endDate: analyticsEndDate,
+              metrics: "estimatedRevenue",
+              dimensions: "video",
+              filters: `video==${video.id}`,
+            });
+          const revenueValue = response.result.rows?.[0]?.[1] ?? 0;
+          const revenueNumber =
+            typeof revenueValue === "string"
+              ? Number(revenueValue)
+              : (revenueValue as number);
+          newRevenues[video.id] = Number.isFinite(revenueNumber)
+            ? revenueNumber
+            : 0;
+        }
+        setVideoRevenues(newRevenues);
+      } catch (err) {
+        console.error("YouTube Analytics error:", err);
+        setRevenueError(
+          "Failed to fetch video revenues. See console for details."
+        );
+      } finally {
+        setLoadingRevenue(false);
+      }
+    };
+    fetchRevenues();
+  }, [videos, selectedChannel]);
 
   // Debug: Log channels whenever they change
   useEffect(() => {
@@ -186,11 +247,19 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
                         {new Date(video.publishedAt).toLocaleDateString()}
                       </p>
 
-                      {video.revenue !== undefined && (
-                        <p className="text-sm mt-2 text-green-600 font-medium">
-                          Revenue: ${video.revenue.toFixed(2)}
+                      {loadingRevenue ? (
+                        <p className="text-sm mt-2 text-gray-400">
+                          Loading revenue...
                         </p>
-                      )}
+                      ) : revenueError ? (
+                        <p className="text-sm mt-2 text-red-600">
+                          {revenueError}
+                        </p>
+                      ) : videoRevenues[video.id] !== undefined ? (
+                        <p className="text-sm mt-2 text-green-600 font-medium">
+                          Revenue: ${videoRevenues[video.id].toFixed(2)}
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                 ))}
