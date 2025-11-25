@@ -126,23 +126,24 @@ const AllAdminAccount: React.FC = () => {
             Search, sort, and manage administrator accounts.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full">
+          <div className="relative w-full sm:w-auto">
             <span className="absolute inset-y-0 left-3 flex items-center text-gray-400">
               🔍
             </span>
             <input
               type="text"
               placeholder="Search admins by name or email"
-              className="pl-10 pr-4 py-2 rounded-full border border-gray-200 bg-white shadow-sm w-64 focus:outline-none focus:ring-2 focus:ring-red-200"
+              className="pl-10 pr-4 py-2 rounded-full border border-gray-200 bg-white shadow-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-red-200"
               value={globalFilter}
               onChange={(e) => setGlobalFilter(e.target.value)}
             />
           </div>
+
           <button
             type="button"
             onClick={() => navigate("/account/new-admin")}
-            className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow"
+            className="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow w-full sm:w-auto"
           >
             Add Admin
           </button>
@@ -154,8 +155,8 @@ const AllAdminAccount: React.FC = () => {
           <h2 className="text-lg font-semibold text-gray-700">Admin List</h2>
         </div>
 
-        {/* TABLE */}
-        <div className="overflow-x-auto">
+        {/* DESKTOP TABLE */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="min-w-full w-full table-auto">
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -212,6 +213,52 @@ const AllAdminAccount: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* MOBILE CARDS */}
+        <div className="md:hidden grid grid-cols-1 gap-4">
+          {table.getRowModel().rows.map((row) => {
+            const original = row.original as any;
+            return (
+              <div
+                key={row.id}
+                className="bg-white p-4 rounded-lg shadow-sm ring-1 ring-gray-100"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center font-semibold text-base">
+                    {(
+                      (original.first_name || "").charAt(0) +
+                      (original.last_name || "").charAt(0)
+                    ).toUpperCase() || "A"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="font-medium text-gray-800 truncate">
+                        {original.first_name} {original.last_name}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {original.role?.replace("_", " ")}
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-500 truncate mt-1">
+                      {original.email}
+                    </div>
+                    <div className="mt-3 flex items-center gap-2">
+                      <button className="inline-flex items-center gap-2 border border-red-100 text-red-600 px-3 py-1 rounded-md text-sm hover:bg-red-50 transition">
+                        Manage
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          {admins.length === 0 && (
+            <div className="text-center py-10 text-gray-500">
+              No admin accounts found.
+            </div>
+          )}
         </div>
       </div>
     </div>
