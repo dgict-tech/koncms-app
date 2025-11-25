@@ -85,11 +85,16 @@ const AllAdminAccount: React.FC = () => {
       columnHelper.display({
         id: "action",
         header: "Action",
-        cell: () => (
-          <button className="inline-flex items-center gap-2 border border-red-100 text-red-600 px-3 py-1 rounded-md text-sm hover:bg-red-50 transition">
-            Manage
-          </button>
-        ),
+        cell: (info) => {
+          const row = info.row.original as any;
+          if (row.role === "super_admin")
+            return <span className="text-xs text-gray-400">—</span>;
+          return (
+            <button className="inline-flex items-center gap-2 border border-red-100 text-red-600 px-3 py-1 rounded-md text-sm hover:bg-red-50 transition">
+              Manage
+            </button>
+          );
+        },
       }),
     ],
     [columnHelper]
@@ -244,9 +249,11 @@ const AllAdminAccount: React.FC = () => {
                       {original.email}
                     </div>
                     <div className="mt-3 flex items-center gap-2">
-                      <button className="inline-flex items-center gap-2 border border-red-100 text-red-600 px-3 py-1 rounded-md text-sm hover:bg-red-50 transition">
-                        Manage
-                      </button>
+                      {original.role !== "super_admin" && (
+                        <button className="inline-flex items-center gap-2 border border-red-100 text-red-600 px-3 py-1 rounded-md text-sm hover:bg-red-50 transition">
+                          Manage
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
