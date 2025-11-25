@@ -133,7 +133,7 @@ const VideoAnalytics: React.FC = () => {
 
         // auto-select first video if none selected
         if ((data?.length || 0) > 0) {
-          setSelectedVideo((prev) => prev ?? (data[0] || null));
+          setSelectedVideo((prev: any | null) => prev ?? (data[0] || null));
         }
       } catch (error) {
         console.log(error);
@@ -345,9 +345,7 @@ const VideoAnalytics: React.FC = () => {
             callback: function (value: string | number, index: number): string {
               // only show every `step` label on mobile/desktop to keep chart readable
               if (index % step !== 0) return "";
-              const label = this.getLabelForValue
-                ? this.getLabelForValue(value)
-                : (chartData?.labels?.[index] as string);
+              const label = (chartData?.labels?.[index] as string) || "";
               if (!label) return "";
               // shorten ISO-style date labels (YYYY-MM-DD -> MM-DD)
               if (typeof label === "string" && label.includes("-")) {
