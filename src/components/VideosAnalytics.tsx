@@ -193,19 +193,72 @@ const VideoAnalytics: React.FC = () => {
   // LINE CHART DATA
   const chartData = useMemo(() => {
     if (!selectedVideo) return null;
-
     // compute date labels based on the current dateRange
     const { start, end } = getDateRange(dateRange);
     const startDate = new Date(start);
     const endDate = new Date(end);
+
+    const useMonthly = ["90d", "6m", "1y", "2y", "5y"].includes(dateRange);
+
+    // deterministic pseudo-random seed based on video id
+    const seed = selectedVideo.id
+      .split("")
+      .reduce((s: number, ch: string) => s + ch.charCodeAt(0), 0);
+    const rand = (i: number) => {
+      const x = Math.sin(seed + i) * 10000;
+      return x - Math.floor(x);
+    };
+
+    const totalViews = Number(selectedVideo.views) || 0;
+
+    if (useMonthly) {
+      // produce month labels between start and end (inclusive)
+      const labels: string[] = [];
+      const months: { year: number; month: number }[] = [];
+      const cur = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      const endMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+      let idx = 0;
+      while (cur <= endMonth) {
+        labels.push(
+          cur.toLocaleString(undefined, { month: "short", year: "numeric" })
+        );
+        months.push({ year: cur.getFullYear(), month: cur.getMonth() });
+        cur.setMonth(cur.getMonth() + 1);
+        idx++;
+      }
+
+      const monthsCount = labels.length || 1;
+      const base = Math.floor(totalViews / monthsCount);
+      const data = months.map((_, i) => {
+        const noise = Math.round(rand(i) * base * 0.5);
+        return Math.max(0, base + noise - Math.floor(base * 0.2));
+      });
+      const sum = data.reduce((a, b) => a + b, 0) || 1;
+      const scaled = data.map((v) => Math.round((v / sum) * totalViews));
+
+      return {
+        labels,
+        datasets: [
+          {
+            label: "Views",
+            data: scaled,
+            fill: true,
+            tension: 0.4,
+            borderColor: "rgba(255, 0, 0, 0.8)",
+            backgroundColor: "rgba(255, 0, 0, 0.12)",
+            pointRadius: 3,
+          },
+        ],
+      };
+    }
+
+    // daily labels
     const daysCount = Math.max(
       1,
       Math.round(
         (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
       ) + 1
     );
-
-    // produce labels as readable dates
     const labels: string[] = [];
     for (let i = 0; i < daysCount; i++) {
       const d = new Date(startDate);
@@ -213,25 +266,11 @@ const VideoAnalytics: React.FC = () => {
       labels.push(d.toISOString().split("T")[0]);
     }
 
-    // Distribute total views across days with light randomness but deterministic per video
-    const totalViews = Number(selectedVideo.views) || 0;
     const base = Math.floor(totalViews / daysCount);
-    // deterministic pseudo-random based on video id
-    const seed = selectedVideo.id
-      .split("")
-      .reduce((s: number, ch: string) => s + ch.charCodeAt(0), 0);
-    const rand = (i: number) => {
-      // simple LCG-ish deterministic noise
-      const x = Math.sin(seed + i) * 10000;
-      return x - Math.floor(x);
-    };
-
     const data = labels.map((_, i) => {
-      const noise = Math.round(rand(i) * base * 0.6); // up to 60% variance
+      const noise = Math.round(rand(i) * base * 0.6);
       return Math.max(0, base + noise - Math.floor(base * 0.3));
     });
-
-    // adjust to match totalViews approximately
     const sum = data.reduce((a, b) => a + b, 0) || 1;
     const scaled = data.map((v) => Math.round((v / sum) * totalViews));
 
@@ -338,7 +377,7 @@ const VideoAnalytics: React.FC = () => {
             Select Date Range
           </label>
           <select
-            className="bg-white p-2 rounded w-full border border-gray-100 shadow-sm"
+            className="bg-white px-3 py-4 rounded w-full border border-red-500 shadow-sm"
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value as any)}
           >
@@ -350,9 +389,6 @@ const VideoAnalytics: React.FC = () => {
             <option value="2y">Last 2 Years</option>
             <option value="5y">Last 5 Years</option>
           </select>
-          <p className="text-xs text-gray-500 mt-2">
-            Date range affects chart only.
-          </p>
         </div>
       </div>
 
@@ -366,27 +402,27 @@ const VideoAnalytics: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="flex items-start gap-4 mb-4">
+            <div className="flex flex-col sm:flex-row items-start gap-4 mb-4">
               <img
                 src={selectedVideo.thumbnail}
                 alt={selectedVideo.title}
-                className="w-20 h-12 rounded-md object-cover ring-1 ring-gray-100"
+                className="w-full sm:w-20 h-44 sm:h-12 rounded-md object-cover ring-1 ring-gray-100"
               />
               <div className="flex-1">
-                <h3 className="text-2xl font-semibold text-gray-800">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-800 truncate">
                   {selectedVideo.title}
                 </h3>
-                <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2 text-sm text-gray-500">
                   <span className="text-red-600 font-semibold">
                     {formatNumber(Number(selectedVideo.views || 0))} views
                   </span>
-                  <span className="text-gray-300">•</span>
+                  <span className="hidden sm:inline text-gray-300">•</span>
                   <span>
                     {new Date(selectedVideo.publishedAt).toLocaleDateString()}
                   </span>
                 </div>
               </div>
-              <div className="ml-auto text-right">
+              <div className="w-full sm:w-auto sm:ml-auto text-left sm:text-right mt-3 sm:mt-0">
                 <div className="text-xs text-gray-400">Range</div>
                 <div className="text-sm font-medium text-red-500">
                   {dateRange}
