@@ -343,6 +343,7 @@ const VideoAnalytics: React.FC = () => {
             maxRotation: 0,
             minRotation: 0,
             callback: function (value: string | number, index: number): string {
+              console.log(value);
               // only show every `step` label on mobile/desktop to keep chart readable
               if (index % step !== 0) return "";
               const label = (chartData?.labels?.[index] as string) || "";
