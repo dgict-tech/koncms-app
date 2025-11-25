@@ -47,6 +47,19 @@ const VideoAnalytics: React.FC = () => {
     "7d" | "30d" | "90d" | "6m" | "1y" | "2y" | "5y"
   >("30d");
 
+  // track window size to adapt chart on mobile
+  const [windowWidth, setWindowWidth] = useState<number>(
+    typeof window !== "undefined" ? window.innerWidth : 1024
+  );
+
+  useEffect(() => {
+    const onResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const isMobile = windowWidth < 640;
+
   // DATE RANGE CALCULATOR
   const getDateRange = (filter: typeof dateRange) => {
     const end = new Date();
@@ -290,22 +303,58 @@ const VideoAnalytics: React.FC = () => {
     };
   }, [selectedVideo, dateRange]);
 
-  const chartOptions = useMemo(
-    () => ({
+  const chartOptions = useMemo(() => {
+    const labelsCount = (chartData?.labels?.length as number) || 1;
+    // On mobile show fewer ticks (avoid horizontal overflow / need to pinch-zoom)
+    const mobileMaxTicks = 4;
+    const desktopMaxTicks = 12;
+    const maxTicks = isMobile ? mobileMaxTicks : desktopMaxTicks;
+
+    // determine step to show roughly `maxTicks` labels
+    const step = Math.max(1, Math.ceil(labelsCount / maxTicks));
+
+    return {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { position: "top" as const },
+        legend: {
+          position: "top" as const,
+          labels: { boxWidth: isMobile ? 10 : 20 },
+        },
         tooltip: { mode: "index" as const, intersect: false },
       },
       interaction: { mode: "nearest" as const, intersect: false },
+      elements: {
+        point: { radius: isMobile ? 0 : 3 },
+        line: { borderWidth: 2 },
+      },
       scales: {
-        x: { display: true, title: { display: false } },
+        x: {
+          display: true,
+          title: { display: false },
+          ticks: {
+            autoSkip: true,
+            maxRotation: 0,
+            minRotation: 0,
+            callback: function (value: any, index: number) {
+              // only show every `step` label on mobile/desktop to keep chart readable
+              if (index % step !== 0) return "";
+              const label = this.getLabelForValue
+                ? this.getLabelForValue(value)
+                : (chartData?.labels?.[index] as string);
+              if (!label) return "";
+              // shorten ISO-style date labels (YYYY-MM-DD -> MM-DD)
+              if (typeof label === "string" && label.includes("-")) {
+                return label.slice(5);
+              }
+              return label;
+            },
+          },
+        },
         y: { display: true, title: { display: true, text: "Views" } },
       },
-    }),
-    []
-  );
+    };
+  }, [chartData, isMobile]);
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
@@ -406,7 +455,7 @@ const VideoAnalytics: React.FC = () => {
               <img
                 src={selectedVideo.thumbnail}
                 alt={selectedVideo.title}
-                className="w-full sm:w-20 h-44 sm:h-12 rounded-md object-cover ring-1 ring-gray-100"
+                className="w-1/3 sm:w-20 h-44 sm:h-12 rounded-md object-cover ring-1 ring-gray-100"
               />
               <div className="flex-1">
                 <h3 className="text-base sm:text-lg font-semibold text-gray-800 truncate">
@@ -431,7 +480,10 @@ const VideoAnalytics: React.FC = () => {
             </div>
 
             <div className="bg-white rounded-lg p-6 shadow-sm">
-              <div style={{ position: "relative" }} className="h-[520px]">
+              <div
+                style={{ position: "relative" }}
+                className={isMobile ? "h-[340px]" : "h-[520px]"}
+              >
                 <Line data={chartData!} options={chartOptions} />
               </div>
             </div>
