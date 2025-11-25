@@ -130,6 +130,11 @@ const VideoAnalytics: React.FC = () => {
         );
 
         setVideos(data || []);
+
+        // auto-select first video if none selected
+        if ((data?.length || 0) > 0) {
+          setSelectedVideo((prev) => prev ?? (data[0] || null));
+        }
       } catch (error) {
         console.log(error);
       } finally {
