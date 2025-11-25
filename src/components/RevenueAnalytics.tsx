@@ -21,7 +21,7 @@ import {
   youtubeAuthService,
   type ChannelToken,
 } from "../services/youtubeAuth.service";
-import { fetchChannelVideos, formatNumber } from "../services/youtube.service";
+import { fetchChannelVideos } from "../services/youtube.service";
 
 ChartJS.register(
   CategoryScale,
@@ -136,7 +136,7 @@ const RevenueAnalytics: React.FC = () => {
 
         // auto-select first video if none selected
         if ((data?.length || 0) > 0) {
-          setSelectedVideo((prev) => prev ?? (data[0] || null));
+          setSelectedVideo((prev: any | null) => prev ?? (data[0] || null));
         }
 
         // start fetching revenue for each video in parallel
@@ -383,7 +383,7 @@ const RevenueAnalytics: React.FC = () => {
         tooltip: { mode: "index" as const, intersect: false },
         decimation: {
           enabled: true,
-          algorithm: "lttb",
+          algorithm: "lttb" as const,
           samples: isMobile ? 200 : 500,
         },
       },
