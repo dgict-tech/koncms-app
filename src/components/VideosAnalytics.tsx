@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState, useMemo } from "react";
 import yticon from "../assets/yticon.png";
@@ -336,7 +337,7 @@ const VideoAnalytics: React.FC = () => {
             autoSkip: true,
             maxRotation: 0,
             minRotation: 0,
-            callback: function (value: any, index: number) {
+            callback: function (value: string | number, index: number): string {
               // only show every `step` label on mobile/desktop to keep chart readable
               if (index % step !== 0) return "";
               const label = this.getLabelForValue
@@ -451,14 +452,14 @@ const VideoAnalytics: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="flex flex-col sm:flex-row items-start gap-4 mb-4">
+            <div className="flex flex-col sm:flex-row items-start gap-4 mb-4 min-w-0">
               <img
                 src={selectedVideo.thumbnail}
                 alt={selectedVideo.title}
-                className="w-1/3 sm:w-20 h-44 sm:h-12 rounded-md object-cover ring-1 ring-gray-100"
+                className="w-full sm:w-20 h-44 sm:h-12 rounded-md object-cover ring-1 ring-gray-100"
               />
-              <div className="flex-1">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-800 truncate">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-800 line-clamp-2">
                   {selectedVideo.title}
                 </h3>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2 text-sm text-gray-500">
