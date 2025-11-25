@@ -117,7 +117,7 @@ export default function Sidebar({ isOpen, onClose, user }: SidebarProps) {
             </NavLink>
 
             <NavLink
-              to="/account/revenue"
+              to="/account/revenue-analytics"
               className={({ isActive }) =>
                 `${linkClass} ${isActive ? activeClass : ""} mb-3`
               }

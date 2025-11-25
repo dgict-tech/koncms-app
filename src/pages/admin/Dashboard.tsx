@@ -13,6 +13,7 @@ import AllAdminAccount from "../../components/AllAdminAccount";
 
 import CreateUserAccount from "../../components/CreateUserAccount";
 import AllUserAccount from "../../components/AllUserAccount";
+import RevenueAnalytics from "../../components/RevenueAnalytics";
 
 export interface AccountSetUpProps {
   user: any;
@@ -106,6 +107,15 @@ const Dashboard: React.FC = () => {
             element={
               <AuthGuard>
                 <VideoAnalytics />
+              </AuthGuard>
+            }
+          />
+
+          <Route
+            path="/revenue-analytics"
+            element={
+              <AuthGuard>
+                <RevenueAnalytics />
               </AuthGuard>
             }
           />
