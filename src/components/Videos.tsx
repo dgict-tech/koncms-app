@@ -15,85 +15,60 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
   );
   const [videos, setVideos] = useState<any[]>([]);
   const [loadingModal, setLoadingModal] = useState(false);
+
   // Revenue state
   const [videoRevenues, setVideoRevenues] = useState<{ [id: string]: number }>(
     {}
   );
-  const [loadingRevenue, setLoadingRevenue] = useState(false);
-  const [revenueError, setRevenueError] = useState("");
-  // Fetch revenue for each video after videos are loaded
-  useEffect(() => {
-    const fetchRevenues = async () => {
+
+  /** ------------------------------------------------------
+   *  Fetch revenue for ONE video — runs in parallel
+   * ------------------------------------------------------ */
+  const fetchRevenueForVideo = async (videoId: string) => {
+    try {
       window.gapi.client.setToken({
         access_token: selectedChannel?.access_token,
       });
+
       await window.gapi.client.load("youtubeAnalytics", "v2");
       await window.gapi.client.load("youtube", "v3");
 
-      if (!selectedChannel || videos.length === 0) {
-        setVideoRevenues({});
-        return;
-      }
-      setLoadingRevenue(true);
-      setRevenueError("");
-      const analyticsStartDate = "2023-01-01"; // You can make this dynamic
-      const analyticsEndDate = "2025-12-31";
-      const newRevenues: { [id: string]: number } = {};
-      try {
-        // Limit to first 20 videos for quota
-        // const limitedVideos = videos.slice(0, 20);
-        // for (const video of limitedVideos) {
-        for (let index = 0; index < videos.length; index++) {
-          const video = videos[index];
+      const res = await window.gapi.client.youtubeAnalytics.reports.query({
+        ids: "channel==MINE",
+        startDate: "2023-01-01",
+        endDate: "2025-12-31",
+        metrics: "estimatedRevenue",
+        dimensions: "video",
+        filters: `video==${videoId}`,
+      });
 
-          const response =
-            await window.gapi.client.youtubeAnalytics.reports.query({
-              ids: "channel==MINE",
-              startDate: analyticsStartDate,
-              endDate: analyticsEndDate,
-              metrics: "estimatedRevenue",
-              dimensions: "video",
-              filters: `video==${video.id}`,
-            });
-          const revenueValue = response.result.rows?.[0]?.[1] ?? 0;
-          const revenueNumber =
-            typeof revenueValue === "string"
-              ? Number(revenueValue)
-              : (revenueValue as number);
-          newRevenues[video.id] = Number.isFinite(revenueNumber)
-            ? revenueNumber
-            : 0;
-        }
-        setVideoRevenues(newRevenues);
-      } catch (err) {
-        console.error("YouTube Analytics error:", err);
-        setRevenueError(
-          "Failed to fetch video revenues. See console for details."
-        );
-      } finally {
-        setLoadingRevenue(false);
-      }
-    };
-    fetchRevenues();
-  }, [videos, selectedChannel]);
+      const value = res.result.rows?.[0]?.[1] ?? 0;
+      const revenue = typeof value === "string" ? Number(value) : value;
 
-  // Debug: Log channels whenever they change
-  useEffect(() => {
-    console.log("Channels state updated:", channels);
-  }, [channels]);
+      setVideoRevenues((prev) => ({
+        ...prev,
+        [videoId]: Number.isFinite(revenue) ? revenue : 0,
+      }));
+    } catch (err) {
+      console.error("Revenue fetch error:", err);
+    }
+  };
 
-  // Load scripts and stored channels (fetch from backend when `user` is available)
+  /** ------------------------------------------------------
+   *  Load YouTube scripts + stored channels from localStorage,
+   *  fallback to backend when user is available
+   * ------------------------------------------------------ */
   useEffect(() => {
     const init = async () => {
       await youtubeAuthService.loadScripts();
-      // Pass the `user` prop so backend channels are fetched and saved to localStorage
+
       const savedChannels = await youtubeAuthService.getStoredChannels(
         user ?? null
       );
+
       console.log("Loaded channels:", savedChannels);
       setChannels(savedChannels || []);
 
-      // Only set a default selected channel when none is currently selected
       setSelectedChannel(
         (prev) =>
           prev ??
@@ -103,33 +78,49 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
     init();
   }, [user]);
 
-  // Remove channel
-
-  // Fetch videos for selected channel
+  /** ------------------------------------------------------
+   *  Fetch videos + start revenue fetching IMMEDIATELY
+   * ------------------------------------------------------ */
   useEffect(() => {
-    const loadVideos = async () => {
+    const loadVideosAndRevenue = async () => {
       if (!selectedChannel) {
-        setVideos([]); // Clear videos when no channel selected
+        setVideos([]);
         return;
       }
 
-      setVideos([]); // Clear old videos before fetching new ones
+      setVideos([]);
+      setVideoRevenues({});
       setLoadingModal(true);
+
       try {
-        const data = await fetchChannelVideos(
+        const videoList = await fetchChannelVideos(
           selectedChannel.access_token,
           selectedChannel.channelId
         );
-        setVideos(data || []); // In case API returns null or undefined
+
+        setVideos(videoList || []);
+
+        // Fetch revenue for each video immediately in parallel
+        for (const vid of videoList || []) {
+          fetchRevenueForVideo(vid.id);
+        }
       } catch (err) {
         console.error(err);
-        setVideos([]); // Prevent stale state
+        setVideos([]);
       } finally {
         setLoadingModal(false);
       }
     };
-    loadVideos();
+
+    loadVideosAndRevenue();
   }, [selectedChannel]);
+
+  /** ------------------------------------------------------
+   *  Debug: log when channels change
+   * ------------------------------------------------------ */
+  useEffect(() => {
+    console.log("Channels updated:", channels);
+  }, [channels]);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen relative">
@@ -150,7 +141,7 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
       <div className="max-full mx-auto mt-10 max-w-7xl">
         <div className="pb-8">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6 relative">
-            {/* Left Section (Title + Icon) */}
+            {/* Left Section */}
             <div className="flex items-center gap-4">
               <img
                 src={yticon}
@@ -167,7 +158,7 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
               </div>
             </div>
 
-            {/* Animated Arrow in Center */}
+            {/* Animated Arrow */}
             <div className="hidden lg:flex absolute left-1/2 transform -translate-x-1/2 items-center justify-center text-red-600">
               <ArrowRight
                 className="w-8 h-8 animate-move-left-right"
@@ -175,7 +166,7 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
               />
             </div>
 
-            {/* Dropdown Section */}
+            {/* Dropdown */}
             <div className="flex items-center gap-4 w-full md:w-1/3">
               <select
                 className="flex-1 border-2 border-red-500 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
@@ -199,7 +190,7 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
         </div>
       </div>
 
-      {/* --- Videos Section --- */}
+      {/* --- Videos Grid --- */}
       {selectedChannel && (
         <div className="max-w-7xl mx-auto mt-10">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
@@ -218,7 +209,7 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
                     key={video.id}
                     className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition transform hover:-translate-y-1 relative group"
                   >
-                    {/* Thumbnail with overlay icon */}
+                    {/* Thumbnail */}
                     <div className="relative">
                       <img
                         src={video.thumbnail}
@@ -238,7 +229,7 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
                       </button>
                     </div>
 
-                    {/* Video details */}
+                    {/* Video Info */}
                     <div className="p-4">
                       <h4 className="text-sm font-medium text-gray-800 line-clamp-2">
                         {video.title}
@@ -247,19 +238,16 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
                         {new Date(video.publishedAt).toLocaleDateString()}
                       </p>
 
-                      {loadingRevenue ? (
+                      {/* Revenue */}
+                      {videoRevenues[video.id] === undefined ? (
                         <p className="text-sm mt-2 text-gray-400">
                           Loading revenue...
                         </p>
-                      ) : revenueError ? (
-                        <p className="text-sm mt-2 text-red-600">
-                          {revenueError}
-                        </p>
-                      ) : videoRevenues[video.id] !== undefined ? (
+                      ) : (
                         <p className="text-sm mt-2 text-green-600 font-medium">
                           Revenue: ${videoRevenues[video.id].toFixed(2)}
                         </p>
-                      ) : null}
+                      )}
                     </div>
                   </div>
                 ))}
@@ -269,7 +257,7 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
         </div>
       )}
 
-      {/* --- Loading Modal --- */}
+      {/* Loading Modal */}
       {loadingModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 w-72 text-center shadow-lg">
