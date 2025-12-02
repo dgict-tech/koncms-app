@@ -14,6 +14,7 @@ import AllAdminAccount from "../../components/AllAdminAccount";
 import CreateUserAccount from "../../components/CreateUserAccount";
 import AllUserAccount from "../../components/AllUserAccount";
 import RevenueAnalytics from "../../components/RevenueAnalytics";
+import ManageAdminAccount from "../../components/ManageAdminAccount";
 
 export interface AccountSetUpProps {
   user: any;
@@ -134,6 +135,15 @@ const Dashboard: React.FC = () => {
             element={
               <AuthGuard>
                 <AllAdminAccount />
+              </AuthGuard>
+            }
+          />
+
+          <Route
+            path="/manage-admin/:id"
+            element={
+              <AuthGuard>
+                <ManageAdminAccount />
               </AuthGuard>
             }
           />

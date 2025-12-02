@@ -108,7 +108,7 @@ export const fetchYouTubeData = async <T>(
 export const fetchChannelVideos = async (
   access_token: string,
   channelId: string,
-  maxResults = 20,
+  maxResults = 40,
   analyticsStartDate?: string,
   analyticsEndDate?: string
 ) => {

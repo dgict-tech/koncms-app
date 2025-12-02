@@ -5,6 +5,7 @@ import {
   loginAdmin as apiLoginAdmin,
   API_URL,
 } from "./api";
+import { CHANNELS_KEY } from "./youtubeAuth.service";
 
 // ==== INTERFACES ====
 export interface RegisterAdminParams {
@@ -62,6 +63,8 @@ export const loginAdmin = async (
 export const logout = (): void => {
   localStorage.setItem("login_user", "");
   localStorage.removeItem("login_user");
+  localStorage.setItem(CHANNELS_KEY, "");
+  localStorage.removeItem(CHANNELS_KEY);
 };
 
 export const getCurrentUser = () => {

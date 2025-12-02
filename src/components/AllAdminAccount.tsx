@@ -90,7 +90,16 @@ const AllAdminAccount: React.FC = () => {
           if (row.role === "super_admin")
             return <span className="text-xs text-gray-400">—</span>;
           return (
-            <button className="inline-flex items-center gap-2 border border-red-100 text-red-600 px-3 py-1 rounded-md text-sm hover:bg-red-50 transition">
+            <button
+              onClick={() =>
+                navigate(
+                  `/account/manage-admin/${
+                    row.id ?? row._id ?? row.user_id ?? row.id
+                  }`
+                )
+              }
+              className="inline-flex items-center gap-2 border border-red-100 text-red-600 px-3 py-1 rounded-md text-sm hover:bg-red-50 transition"
+            >
               Manage
             </button>
           );
@@ -250,7 +259,19 @@ const AllAdminAccount: React.FC = () => {
                     </div>
                     <div className="mt-3 flex items-center gap-2">
                       {original.role !== "super_admin" && (
-                        <button className="inline-flex items-center gap-2 border border-red-100 text-red-600 px-3 py-1 rounded-md text-sm hover:bg-red-50 transition">
+                        <button
+                          onClick={() =>
+                            navigate(
+                              `/account/manage-admin/${
+                                original.id ??
+                                original._id ??
+                                original.user_id ??
+                                original.id
+                              }`
+                            )
+                          }
+                          className="inline-flex items-center gap-2 border border-red-100 text-red-600 px-3 py-1 rounded-md text-sm hover:bg-red-50 transition"
+                        >
                           Manage
                         </button>
                       )}
