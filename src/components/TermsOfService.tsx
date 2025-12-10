@@ -1,7 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
-import logo from "../assets/logo.png";
 
 const TermsOfService: React.FC = () => {
   const navigate = useNavigate();
