@@ -4,8 +4,8 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from "axios";
 import { logout } from "./auth";
 
-// export const API_URL = "https://api.koncms.com/";
-export const API_URL = "http://localhost:4009/";
+export const API_URL = "https://api.koncms.com/";
+// export const API_URL = "http://localhost:4009/";
 
 // ==== INTERFACES ====
 export interface FetchOptions {
