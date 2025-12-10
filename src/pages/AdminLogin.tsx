@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import type { FormEvent, ChangeEvent } from "react";
 // import { registerAdmin, loginAdmin } from "../services/auth";
-import {  loginAdmin } from "../services/auth";
+import { loginAdmin } from "../services/auth";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import logo from "../assets/logo.png";
 import { Eye, EyeOff } from "lucide-react";
 import SidebarCarousel from "../components/SidebarCarousel";
+import Header from "../components/Header";
 
 interface FormState {
   email: string;
@@ -30,7 +31,13 @@ interface TextInputProps {
   required?: boolean;
 }
 
-const TextInput = ({ value, placeholder, type = "text", onChange, required }: TextInputProps) => (
+const TextInput = ({
+  value,
+  placeholder,
+  type = "text",
+  onChange,
+  required,
+}: TextInputProps) => (
   <input
     type={type}
     value={value}
@@ -44,7 +51,7 @@ const TextInput = ({ value, placeholder, type = "text", onChange, required }: Te
 export default function AdminLogin() {
   const user = useAuth();
   const navigate = useNavigate();
-const isNew =false;
+  const isNew = false;
   // const [isNew, setIsNew] = useState<boolean>(false);
   const [forgotPassword, setForgotPassword] = useState<boolean>(false);
   const [form, setForm] = useState<FormState>({
@@ -58,9 +65,8 @@ const isNew =false;
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-
-  if (user !== "null" && user !== null  && user !== undefined ) {
-     navigate("/account");
+    if (user !== "null" && user !== null && user !== undefined) {
+      navigate("/account");
     }
   }, [user, navigate]);
 
@@ -73,21 +79,23 @@ const isNew =false;
       if (forgotPassword) {
         // TODO: call your password reset API
         // await sendPasswordResetEmail(form.email);
-        setMessage("If this email exists, a password reset link has been sent.");
+        setMessage(
+          "If this email exists, a password reset link has been sent."
+        );
       } else {
-      
         // const result: AuthResponse = isNew
         //   ? await registerAdmin(form)
         //   : await loginAdmin(form.email, form.password);
 
-         const result: AuthResponse = await loginAdmin(form.email, form.password);
-
+        const result: AuthResponse = await loginAdmin(
+          form.email,
+          form.password
+        );
 
         if (result.access_token) {
           localStorage.setItem("login_user", JSON.stringify(result));
         }
 
-     
         navigate("/account");
       }
     } catch (err: any) {
@@ -97,7 +105,10 @@ const isNew =false;
     }
   };
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>, field: keyof FormState) => {
+  const handleInputChange = (
+    e: ChangeEvent<HTMLInputElement>,
+    field: keyof FormState
+  ) => {
     setForm({ ...form, [field]: e.target.value });
   };
 
@@ -107,14 +118,18 @@ const isNew =false;
     <div className="w-full min-h-screen grid grid-cols-1 lg:grid-cols-2">
       {/* Sidebar Carousel */}
       <div className="hidden lg:block text-white bg-[#e1252f] ">
-        <div className="min-h-screen flex items-center justify-center overflow-hidden max-w-7xl" style={{width:"100%"}}>
+        <div
+          className="min-h-screen flex items-center justify-center overflow-hidden max-w-7xl"
+          style={{ width: "100%" }}
+        >
           <SidebarCarousel />
         </div>
       </div>
 
       {/* Form Section */}
       <div className="relative min-h-screen flex items-center justify-center overflow-hidden max-w-5xl w-[90%] mx-auto">
-        <div className="bg-white w-full max-w-md overflow-y-auto space-y-4 py-16 px-3 hide-scrollbar rounded-lg ">
+        <div className="bg-white w-full max-w-md overflow-y-auto space-y-4 py-16 px-3 hide-scrollbar rounded-lg  ">
+          <Header />
           <div className="flex justify-center mb-6">
             <img src={logo} alt="KonCMS" className="h-10" />
           </div>
@@ -130,7 +145,6 @@ const isNew =false;
           <p className="text-sm text-gray-400 mb-6 text-center">
             {forgotPassword
               ? "Enter your email to reset your password"
-
               : "Login to your KONCMS account"}
           </p>
 
@@ -232,8 +246,6 @@ const isNew =false;
                 : "Login"}
             </button>
           </form>
-
-         
 
           {forgotPassword && (
             <p className="mt-4 text-sm text-center">

@@ -1,84 +1,155 @@
-import React from 'react';
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { ChevronLeft } from "lucide-react";
+import logo from "../assets/logo.png";
 
 const TermsOfService: React.FC = () => {
+  const navigate = useNavigate();
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6">Terms of Service</h1>
-      
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">1. Acceptance of Terms</h2>
-        <p className="mb-4">
-          By accessing and using this website, you accept and agree to be bound by the terms and
-          provision of this agreement.
-        </p>
-      </section>
+    <div className="min-h-screen px-4 py-8 bg-gray-50">
+      <div className="max-w-4xl mx-auto">
+        <div className=" shadow-lg border border-gray-100">
+          <div className="bg-red-600 p-8 rounded-t-xl ">
+            <div className="flex items-center justify-between mb-6">
+              <button
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2 text-gray-100 hover:text-[#dcd7d7]"
+                aria-label="Go back"
+              >
+                <ChevronLeft size={20} />
+                <span className="text-sm font-medium">Back</span>
+              </button>
+            </div>
 
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">2. Use License</h2>
-        <p className="mb-4">
-          Permission is granted to temporarily download one copy of the materials (information or
-          software) on Ayooba's website for personal, non-commercial transitory viewing only.
-        </p>
-        <p className="mb-4">This is the grant of a license, not a transfer of title, and under this license you may not:</p>
-        <ul className="list-disc pl-8 mb-4">
-          <li>modify or copy the materials;</li>
-          <li>use the materials for any commercial purpose;</li>
-          <li>attempt to decompile or reverse engineer any software contained on Ayooba's website;</li>
-          <li>remove any copyright or other proprietary notations from the materials;</li>
-          <li>transfer the materials to another person or "mirror" the materials on any other server.</li>
-        </ul>
-      </section>
+            <h1 className="text-3xl font-bold text-[#ffffff] mb-4">
+              Terms of Service
+            </h1>
+          </div>
 
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">3. Disclaimer</h2>
-        <p className="mb-4">
-          The materials on Ayooba's website are provided on an 'as is' basis. Ayooba makes no
-          warranties, expressed or implied, and hereby disclaims and negates all other warranties
-          including, without limitation, implied warranties or conditions of merchantability, fitness
-          for a particular purpose, or non-infringement of intellectual property or other violation
-          of rights.
-        </p>
-      </section>
+          <div className="p-8 bg-white  rounded-b-xl">
+            <section className="mb-6">
+              <h2 className="text-2xl font-semibold mb-3 text-gray-800">
+                1. Acceptance of Terms
+              </h2>
+              <p className="mb-3 text-gray-600">
+                By using KonCMS (the "Service"), you agree to these Terms of
+                Service. If you do not agree, do not use the Service.
+              </p>
+            </section>
 
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">4. Limitations</h2>
-        <p className="mb-4">
-          In no event shall Ayooba or its suppliers be liable for any damages (including, without
-          limitation, damages for loss of data or profit, or due to business interruption) arising
-          out of the use or inability to use the materials on Ayooba's website.
-        </p>
-      </section>
+            <section className="mb-6">
+              <h2 className="text-2xl font-semibold mb-3 text-gray-800">
+                2. Service Description
+              </h2>
+              <p className="mb-3 text-gray-600">
+                KonCMS provides analytics, management, and reporting tools for
+                YouTube channels. The Service integrates with Google/YouTube
+                APIs when you connect your account to fetch channel and video
+                metadata and analytics data you authorize.
+              </p>
+            </section>
 
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">5. Revisions and Errata</h2>
-        <p className="mb-4">
-          The materials appearing on Ayooba's website could include technical, typographical, or
-          photographic errors. Ayooba does not warrant that any of the materials on its website are
-          accurate, complete, or current. Ayooba may make changes to the materials contained on its
-          website at any time without notice.
-        </p>
-      </section>
+            <section className="mb-6">
+              <h2 className="text-2xl font-semibold mb-3 text-gray-800">
+                3. Account Access & Third-Party Services
+              </h2>
+              <p className="mb-3 text-gray-600">
+                To use certain features you must connect a Google/YouTube
+                account via OAuth. By connecting, you grant us access to the
+                data and permissions requested during the OAuth flow. We act as
+                a client of those third-party services and are bound by their
+                terms and API policies.
+              </p>
+            </section>
 
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">6. Links</h2>
-        <p className="mb-4">
-          Ayooba has not reviewed all of the sites linked to its website and is not responsible for
-          the contents of any such linked site. The inclusion of any link does not imply
-          endorsement by Ayooba of the site. Use of any such linked website is at the user's own risk.
-        </p>
-      </section>
+            <section className="mb-6">
+              <h2 className="text-2xl font-semibold mb-3 text-gray-800">
+                4. OAuth Tokens and Data Use
+              </h2>
+              <p className="mb-3 text-gray-600">
+                We store OAuth access and refresh tokens needed to access your
+                YouTube data. Tokens are stored securely and used only to
+                retrieve or refresh data you've authorized. You can revoke our
+                access at any time from your Google account permissions page or
+                by disconnecting your account in the app.
+              </p>
+            </section>
 
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">7. Governing Law</h2>
-        <p className="mb-4">
-          These terms and conditions are governed by and construed in accordance with the laws and
-          you irrevocably submit to the exclusive jurisdiction of the courts in that location.
-        </p>
-      </section>
+            <section className="mb-6">
+              <h2 className="text-2xl font-semibold mb-3 text-gray-800">
+                5. Acceptable Use
+              </h2>
+              <p className="mb-3 text-gray-600">
+                You agree not to use the Service for any unlawful purpose or in
+                a manner that violates the rights of others. Prohibited actions
+                include attempting to bypass API limits, reverse-engineer the
+                Service, or access another user's account without permission.
+              </p>
+            </section>
 
-      <p className="text-sm text-gray-600 mt-8">
-        Last updated: October 25, 2025
-      </p>
+            <section className="mb-6">
+              <h2 className="text-2xl font-semibold mb-3 text-gray-800">
+                6. Termination
+              </h2>
+              <p className="mb-3 text-gray-600">
+                We may suspend or terminate your access for violations of these
+                Terms or for misuse of the Service. You may delete your account
+                at any time; upon deletion we will remove your personal data and
+                revoke stored tokens, subject to any legal retention
+                obligations.
+              </p>
+            </section>
+
+            <section className="mb-6">
+              <h2 className="text-2xl font-semibold mb-3 text-gray-800">
+                7. Disclaimers and Limitation of Liability
+              </h2>
+              <p className="mb-3 text-gray-600">
+                The Service is provided "as is" and on an "as available" basis.
+                We do not guarantee uninterrupted access or the accuracy of
+                third-party data. To the maximum extent permitted by law, KonCMS
+                and its affiliates will not be liable for any indirect,
+                incidental, special, consequential, or punitive damages arising
+                out of your use of the Service.
+              </p>
+            </section>
+
+            <section className="mb-6">
+              <h2 className="text-2xl font-semibold mb-3 text-gray-800">
+                8. Changes to Terms
+              </h2>
+              <p className="mb-3 text-gray-600">
+                We may modify these Terms from time to time. We will notify you
+                of material changes through the app or by updating the "Last
+                updated" date below. Continued use after changes constitutes
+                acceptance of the revised Terms.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-semibold mb-3 text-gray-800">
+                9. Contact
+              </h2>
+              <p className="text-gray-600">
+                For questions about these Terms or to report misuse, contact us
+                at{" "}
+                <a
+                  className="text-blue-600 hover:underline"
+                  href="mailto:info@koncms.com"
+                >
+                  info@koncms.com
+                </a>
+                .
+              </p>
+            </section>
+
+            <p className="text-sm text-gray-600 mt-4">
+              Last updated: December 10, 2025
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
