@@ -35,7 +35,17 @@ const YouTubeConnect: React.FC<AccountSetUpProps> = ({ user }) => {
     const init = async () => {
       setInitialLoading(true);
 
-      await youtubeAuthService.loadScripts();
+      try {
+        await youtubeAuthService.loadScripts();
+      } catch (err) {
+        console.error("Failed to load Google API script:", err);
+        alert(
+          "Unable to load Google APIs. This may be due to a Content Security Policy (CSP) blocking 'eval'. Check your CSP or browser extensions."
+        );
+        setInitialLoading(false);
+        return;
+      }
+
       const saved = await youtubeAuthService.getStoredChannels(user);
 
       setChannels(saved);

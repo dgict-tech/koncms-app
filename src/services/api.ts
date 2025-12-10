@@ -1,12 +1,11 @@
-/* eslint-disable @typescript-eslint/no-empty-object-type */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/services/api.ts
 
 import axios, { type AxiosRequestConfig, type AxiosResponse } from "axios";
 import { logout } from "./auth";
 
-export const API_URL = "https://api.koncms.com/";
-// export const API_URL = "http://localhost:4009/";
+// export const API_URL = "https://api.koncms.com/";
+export const API_URL = "http://localhost:4009/";
 
 // ==== INTERFACES ====
 export interface FetchOptions {
@@ -166,4 +165,50 @@ export async function FetchRequest(
   }
 
   return res;
+}
+
+/**
+ * Assign channels to an admin. Uses the backend admin assign endpoint.
+ * Sends the full list of channel IDs for the admin.
+ */
+/**
+ * Assign a single channel to an admin (AdminController_assignChannelToAdmin)
+ * expected body: { channelId, adminId }
+ */
+export async function assignChannelToAdmin(
+  adminId: string,
+  channelId: string,
+  header: AxiosRequestConfig
+): Promise<AxiosResponse<any>> {
+  const url = `${API_URL}admin/channels/assign`;
+  return Axios_post(url, { channelId, adminId }, header);
+}
+
+/**
+ * Assign multiple channels to an admin. Sends an array of channel IDs.
+ */
+export async function assignChannelsToAdmin(
+  adminId: string,
+  channelIds: string[],
+  header: AxiosRequestConfig
+): Promise<AxiosResponse<any>> {
+  const url = `${API_URL}admin/assign-channels/${adminId}`;
+  return Axios_post(url, { channelIds }, header);
+}
+
+/**
+ * Remove a channel from an admin. Uses DELETE to `/admin/channels/remove` with body { adminId, channelId }
+ */
+export async function removeChannelFromAdmin(
+  adminId: string,
+  channelId: string,
+  header: AxiosRequestConfig
+): Promise<AxiosResponse<any>> {
+  const url = `${API_URL}admin/channels/remove`;
+  // Axios.delete accepts a config object where `data` contains the request body
+  const config: AxiosRequestConfig = {
+    ...(header || {}),
+    data: { adminId, channelId },
+  };
+  return Axios_delete(url, config);
 }

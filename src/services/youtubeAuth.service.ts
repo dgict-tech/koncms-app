@@ -39,13 +39,59 @@ export const youtubeAuthService = {
    * Load Google API scripts once
    */
   loadScripts: (): Promise<void> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       if (window.gapi && window.gapi.client) return resolve();
 
       const script = document.createElement("script");
       script.src = "https://apis.google.com/js/api.js";
       script.async = true;
-      script.onload = () => window.gapi.load("client", resolve);
+
+      const cleanup = () => {
+        script.onload = null;
+        script.onerror = null;
+      };
+
+      script.onload = () => {
+        // gapi may still throw internally if CSP prevents evaluation; guard with try/catch
+        try {
+          if (window.gapi && typeof window.gapi.load === "function") {
+            window.gapi.load("client", () => {
+              cleanup();
+              resolve();
+            });
+          } else {
+            cleanup();
+            reject(new Error("gapi loaded but `gapi.load` is not available"));
+          }
+        } catch (err) {
+          cleanup();
+          reject(err instanceof Error ? err : new Error(String(err)));
+        }
+      };
+
+      script.onerror = (ev: any) => {
+        cleanup();
+        reject(
+          new Error(
+            "Failed to load Google API script (possibly blocked by CSP)"
+          )
+        );
+      };
+
+      // Guard: if the browser blocks script execution due to CSP 'unsafe-eval' being disallowed,
+      // the script may fail silently. Use a timeout to surface that situation.
+      const timeout = window.setTimeout(() => {
+        // If gapi is still not ready after 10s, assume blocked
+        if (!window.gapi || !window.gapi.client) {
+          cleanup();
+          reject(
+            new Error(
+              "Timed out loading Google API script (possible CSP 'unsafe-eval' restriction)"
+            )
+          );
+        }
+        clearTimeout(timeout);
+      }, 10000);
 
       document.body.appendChild(script);
     });
