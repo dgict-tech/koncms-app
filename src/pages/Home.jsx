@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useToast } from "../components/ToastProvider";
 import { useNavigate } from "react-router-dom";
 import { getProjects } from "../services/api";
 
@@ -6,6 +7,7 @@ export default function Home() {
   const [accessCode, setAccessCode] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const handleStart = async () => {
     if (!accessCode.trim()) return;
@@ -14,14 +16,14 @@ export default function Home() {
       const projects = await getProjects();
       const project = projects.find((p) => p.accessCode === accessCode.trim());
       if (!project) {
-        alert("Invalid access code. Please try again.");
+        showToast("Invalid access code. Please try again.", "error");
         setLoading(false);
         return;
       }
       navigate(`/quiz/${project._id}`);
     } catch (error) {
       console.error("Error fetching project:", error);
-      alert("An error occurred while starting the quiz.");
+      showToast("An error occurred while starting the quiz.", "error");
     } finally {
       setLoading(false);
     }

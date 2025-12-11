@@ -143,6 +143,45 @@ export async function Axios_delete(
   }
 }
 
+/**
+ * Update admin permissions via PATCH /admin/permissions/{adminId}
+ */
+export async function updateAdminPermissions(
+  adminId: string,
+  permissions: Record<string, any>,
+  header: AxiosRequestConfig
+): Promise<AxiosResponse<any>> {
+  const url = `${API_URL}admin/permissions/${adminId}`;
+  try {
+    const response = await axios.patch(url, permissions, header);
+    return response;
+  } catch (error: any) {
+    if (error.response?.status === 401) {
+      logout();
+    }
+    throw error;
+  }
+}
+
+/**
+ * Fetch admin permissions via GET /admin/permissions/{adminId}
+ */
+export async function getAdminPermissions(
+  adminId: string,
+  header: AxiosRequestConfig
+): Promise<AxiosResponse<any>> {
+  const url = `${API_URL}admin/permissions/${adminId}`;
+  try {
+    const response = await axios.get(url, header);
+    return response;
+  } catch (error: any) {
+    if (error.response?.status === 401) {
+      logout();
+    }
+    throw error;
+  }
+}
+
 export async function FetchRequest(
   url: string,
   options: FetchOptions = {}
@@ -182,6 +221,19 @@ export async function assignChannelToAdmin(
 ): Promise<AxiosResponse<any>> {
   const url = `${API_URL}admin/channels/assign`;
   return Axios_post(url, { channelId, adminId }, header);
+}
+
+/**
+ * Assign a video to a user. Expected body: { userId, channelId, videoId }
+ */
+export async function assignVideoToUser(
+  userId: string,
+  channelId: string,
+  videoId: string,
+  header: AxiosRequestConfig
+): Promise<AxiosResponse<any>> {
+  const url = `${API_URL}admin/user-videos/assign`;
+  return Axios_post(url, { userId, channelId, videoId }, header);
 }
 
 /**

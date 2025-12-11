@@ -77,14 +77,22 @@ const AllUserAccount: React.FC = () => {
       columnHelper.display({
         id: "action",
         header: "Action",
-        cell: () => (
-          <button className="inline-flex items-center gap-2 border border-red-100 text-red-600 px-3 py-1 rounded-md text-sm hover:bg-red-50 transition">
-            Manage
-          </button>
-        ),
+        cell: (info) => {
+          const row = info.row.original as any;
+          return (
+            <button
+              onClick={() =>
+                navigate(`/account/manage-user/${row.id || row._id}`)
+              }
+              className="inline-flex items-center gap-2 border border-red-100 text-red-600 px-3 py-1 rounded-md text-sm hover:bg-red-50 transition"
+            >
+              Manage
+            </button>
+          );
+        },
       }),
     ],
-    [columnHelper]
+    [columnHelper, navigate]
   );
 
   const table = useReactTable({
@@ -240,6 +248,13 @@ const AllUserAccount: React.FC = () => {
                     <div className="mt-3 flex items-center justify-end">
                       <button
                         type="button"
+                        onClick={() =>
+                          navigate(
+                            `/account/manage-user/${
+                              original.id || original._id
+                            }`
+                          )
+                        }
                         className="inline-flex items-center gap-2 border border-red-100 text-red-600 px-3 py-1 rounded-md text-sm hover:bg-red-50 transition"
                       >
                         Manage

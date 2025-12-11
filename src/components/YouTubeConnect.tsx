@@ -7,6 +7,7 @@ import {
 } from "../services/youtubeAuth.service";
 
 import yticon from "../assets/yticon.png";
+import { useToast } from "./ToastProvider";
 import type { AccountSetUpProps } from "../pages/admin/Dashboard";
 
 const YouTubeConnect: React.FC<AccountSetUpProps> = ({ user }) => {
@@ -26,6 +27,8 @@ const YouTubeConnect: React.FC<AccountSetUpProps> = ({ user }) => {
     channelTitle: null as string | null,
   });
 
+  const { showToast } = useToast();
+
   /**
    * Initialization:
    * - Load scripts
@@ -39,8 +42,10 @@ const YouTubeConnect: React.FC<AccountSetUpProps> = ({ user }) => {
         await youtubeAuthService.loadScripts();
       } catch (err) {
         console.error("Failed to load Google API script:", err);
-        alert(
-          "Unable to load Google APIs. This may be due to a Content Security Policy (CSP) blocking 'eval'. Check your CSP or browser extensions."
+        const { showToast } = useToast();
+        showToast(
+          "Unable to load Google APIs. This may be due to a Content Security Policy (CSP) blocking 'eval'. Check your CSP or browser extensions.",
+          "error"
         );
         setInitialLoading(false);
         return;
@@ -68,7 +73,7 @@ const YouTubeConnect: React.FC<AccountSetUpProps> = ({ user }) => {
       }, 400);
     } catch (err) {
       console.error(err);
-      alert("Unable to start YouTube authentication");
+      showToast("Unable to start YouTube authentication", "error");
       setConnectLoading(false);
     }
   };
@@ -87,7 +92,7 @@ const YouTubeConnect: React.FC<AccountSetUpProps> = ({ user }) => {
     if (!confirmModal.channelId) return;
 
     if (!user) {
-      alert("User not found");
+      showToast("User not found", "error");
       return;
     }
 
@@ -118,7 +123,7 @@ const YouTubeConnect: React.FC<AccountSetUpProps> = ({ user }) => {
       setConfirmModal({ show: false, channelId: null, channelTitle: null });
     } catch (err) {
       console.error("Failed to remove channel:", err);
-      alert("Failed to remove channel. See console for details.");
+      showToast("Failed to remove channel. See console for details.", "error");
     }
   };
 

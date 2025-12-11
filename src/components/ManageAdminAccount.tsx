@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
+import { useToast } from "./ToastProvider";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   BACKEND_URL,
@@ -7,7 +8,10 @@ import {
 } from "../services/youtubeAuth.service";
 import {
   assignChannelToAdmin,
+  assignChannelsToAdmin,
   removeChannelFromAdmin,
+  updateAdminPermissions,
+  getAdminPermissions,
   Axios_get,
 } from "../services/api";
 import { UserAuthorization } from "../services/auth";
@@ -25,6 +29,15 @@ const ManageAdminAccount: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [itemLoading, setItemLoading] = useState<Record<string, boolean>>({});
+  const { showToast } = useToast();
+  const [permissions, setPermissions] = useState<any>({
+    role: "admin",
+    admin_can_add_user: false,
+    admin_can_manage_user: false,
+    admin_can_add_video_to_user: false,
+    admin_can_remove_video_from_user: false,
+    admin_can_delete_user: false,
+  });
 
   useEffect(() => {
     const load = async () => {
@@ -54,6 +67,43 @@ const ManageAdminAccount: React.FC = () => {
         };
 
         setAdmin(normalizedAdmin);
+
+        // Try to fetch explicit permissions for this admin from backend
+        try {
+          const { data: permsResp } = await getAdminPermissions(
+            normalizedAdmin.id,
+            UserAuthorization()
+          );
+          const perms = permsResp.data || permsResp || {};
+          setPermissions({
+            role: perms.role ?? normalizedAdmin.role ?? "admin",
+            admin_can_add_user: perms.admin_can_add_user ?? false,
+            admin_can_manage_user: perms.admin_can_manage_user ?? false,
+            admin_can_add_video_to_user:
+              perms.admin_can_add_video_to_user ?? false,
+            admin_can_remove_video_from_user:
+              perms.admin_can_remove_video_from_user ?? false,
+            admin_can_delete_user: perms.admin_can_delete_user ?? false,
+          });
+        } catch (err) {
+          console.warn("Failed to fetch admin permissions, falling back:", err);
+          // Fallback to profile embedded permissions or defaults
+          const p = {
+            role: rawProfile?.role ?? normalizedAdmin.role ?? "admin",
+            admin_can_add_user:
+              rawProfile?.permissions?.admin_can_add_user ?? false,
+            admin_can_manage_user:
+              rawProfile?.permissions?.admin_can_manage_user ?? false,
+            admin_can_add_video_to_user:
+              rawProfile?.permissions?.admin_can_add_video_to_user ?? false,
+            admin_can_remove_video_from_user:
+              rawProfile?.permissions?.admin_can_remove_video_from_user ??
+              false,
+            admin_can_delete_user:
+              rawProfile?.permissions?.admin_can_delete_user ?? false,
+          };
+          setPermissions(p);
+        }
 
         // Try to fetch available channels from backend first
         try {
@@ -139,17 +189,23 @@ const ManageAdminAccount: React.FC = () => {
     if (!id) return;
     setSaving(true);
     try {
-      // Send assigned channel ids to backend. Adjust endpoint to match your API.
-      // await Axios_post(
-      //   `${BACKEND_URL}/assign-channels/${id}`,
-      //   { channelIds: assignedChannelIds },
-      //   UserAuthorization()
-      // );
-      // Optionally navigate back to list
+      // First, update permissions
+      await updateAdminPermissions(id, permissions, UserAuthorization());
+
+      // Then, send the assigned channel ids in bulk (backend should accept this)
+      await assignChannelsToAdmin(id, assignedChannelIds, UserAuthorization());
+
+      showToast(
+        "Saved permissions and channel assignments successfully",
+        "success"
+      );
       navigate("/account/all-admin");
     } catch (err) {
-      console.error("Failed to assign channels", err);
-      alert("Failed to save channel assignments. Check console for details.");
+      console.error("Failed to save admin settings", err);
+      showToast(
+        "Failed to save admin settings. See console for details.",
+        "error"
+      );
     } finally {
       setSaving(false);
     }
@@ -199,7 +255,107 @@ const ManageAdminAccount: React.FC = () => {
                 </div>
               </div>
             </div>
+            <div>
+              {/* permission settings could go here */}
+              <div className="mb-6">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                  Permissions
+                </h4>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-start">
+                  {/* Role is fixed to 'admin' and not editable in this UI. */}
+
+                  <div className="flex flex-col gap-3">
+                    <label className="inline-flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        className="w-5 h-5 accent-red-600 rounded"
+                        checked={!!permissions.admin_can_add_user}
+                        onChange={(e) =>
+                          setPermissions((s: any) => ({
+                            ...s,
+                            admin_can_add_user: e.target.checked,
+                          }))
+                        }
+                      />
+                      <span className="text-base md:text-sm text-gray-700">
+                        Can add user
+                      </span>
+                    </label>
+
+                    <label className="inline-flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        className="w-5 h-5 accent-red-600 rounded"
+                        checked={!!permissions.admin_can_manage_user}
+                        onChange={(e) =>
+                          setPermissions((s: any) => ({
+                            ...s,
+                            admin_can_manage_user: e.target.checked,
+                          }))
+                        }
+                      />
+                      <span className="text-base md:text-sm text-gray-700">
+                        Can manage user
+                      </span>
+                    </label>
+
+                    <label className="inline-flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        className="w-5 h-5 accent-red-600 rounded"
+                        checked={!!permissions.admin_can_add_video_to_user}
+                        onChange={(e) =>
+                          setPermissions((s: any) => ({
+                            ...s,
+                            admin_can_add_video_to_user: e.target.checked,
+                          }))
+                        }
+                      />
+                      <span className="text-base md:text-sm text-gray-700">
+                        Can add video to user
+                      </span>
+                    </label>
+
+                    <label className="inline-flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        className="w-5 h-5 accent-red-600 rounded"
+                        checked={!!permissions.admin_can_remove_video_from_user}
+                        onChange={(e) =>
+                          setPermissions((s: any) => ({
+                            ...s,
+                            admin_can_remove_video_from_user: e.target.checked,
+                          }))
+                        }
+                      />
+                      <span className="text-base md:text-sm text-gray-700">
+                        Can remove video from user
+                      </span>
+                    </label>
+
+                    <label className="inline-flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        className="w-5 h-5 accent-red-600 rounded"
+                        checked={!!permissions.admin_can_delete_user}
+                        onChange={(e) =>
+                          setPermissions((s: any) => ({
+                            ...s,
+                            admin_can_delete_user: e.target.checked,
+                          }))
+                        }
+                      />
+                      <span className="text-base md:text-sm text-gray-700">
+                        Can delete user
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Role is fixed and permissions are saved via the single Save button below. */}
+                </div>
+              </div>
+            </div>
             <div className="mb-4 mt-10">
               <h4 className="text-sm font-semibold text-gray-700 mb-2">
                 Available Channels
@@ -245,8 +401,9 @@ const ManageAdminAccount: React.FC = () => {
                         }
                       } catch (err) {
                         console.error("Failed to update assignment", err);
-                        alert(
-                          "Failed to update assignment. See console for details."
+                        showToast(
+                          "Failed to update assignment. See console for details.",
+                          "error"
                         );
                       } finally {
                         setItemLoading((s) => ({ ...s, [chId]: false }));
@@ -315,7 +472,7 @@ const ManageAdminAccount: React.FC = () => {
                 disabled={saving}
                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
               >
-                {saving ? "Saving…" : "Save Assignments"}
+                {saving ? "Saving…" : "Save"}
               </button>
             </div>
           </div>

@@ -12,6 +12,7 @@ import {
   Legend,
 } from "chart.js";
 import { Line, Bar } from "react-chartjs-2";
+import { useToast } from "./ToastProvider";
 
 ChartJS.register(
   CategoryScale,
@@ -44,7 +45,7 @@ declare global {
   }
 }
 
- export interface ChannelStats {
+export interface ChannelStats {
   title: string;
   thumbnail: string;
   subscribers: string;
@@ -82,7 +83,7 @@ export interface GapiChannelItem {
   };
 }
 
- export interface YouTubeChannelsListResponse {
+export interface YouTubeChannelsListResponse {
   result: {
     items: GapiChannelItem[];
   };
@@ -103,12 +104,16 @@ export interface PlaylistItemsListResponse {
   };
 }
 
- export type AnalyticsRow = Array<string | number>;
+export type AnalyticsRow = Array<string | number>;
 
 export interface YouTubeAnalyticsReportResponse {
   result: {
     rows?: AnalyticsRow[];
-    columnHeaders?: Array<{ name: string; columnType?: string; dataType?: string }>;
+    columnHeaders?: Array<{
+      name: string;
+      columnType?: string;
+      dataType?: string;
+    }>;
   };
 }
 
@@ -127,7 +132,7 @@ export interface PublicChannelApiResponse {
   }>;
 }
 
-export type RevenueReportType = 'channel' | 'contentOwner';
+export type RevenueReportType = "channel" | "contentOwner";
 
 export interface VideoRevenueItem {
   id: string;
@@ -136,22 +141,25 @@ export interface VideoRevenueItem {
   revenue: number;
 }
 
-
-
-
 export const YouTubeAnalytics: React.FC = () => {
+  const { showToast } = useToast();
   const [gisLoaded, setGisLoaded] = useState(false);
   const [gapiLoaded, setGapiLoaded] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [userName, setUserName] = useState("");
-  const [analytics, setAnalytics] = useState<YouTubeAnalyticsReportResponse['result'] | null>(null);
-  const [revenue, setRevenue] = useState<YouTubeAnalyticsReportResponse['result'] | null>(null);
+  const [analytics, setAnalytics] = useState<
+    YouTubeAnalyticsReportResponse["result"] | null
+  >(null);
+  const [revenue, setRevenue] = useState<
+    YouTubeAnalyticsReportResponse["result"] | null
+  >(null);
   const [channelId, setChannelId] = useState("");
   const [stats, setStats] = useState<ChannelStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [channels, setChannels] = useState<Channel[]>([]);
-  const [revenueReportType, setRevenueReportType] = useState<RevenueReportType>('channel');
+  const [revenueReportType, setRevenueReportType] =
+    useState<RevenueReportType>("channel");
   const [analyticsStartDate, setAnalyticsStartDate] = useState<string>("");
   const [analyticsEndDate, setAnalyticsEndDate] = useState<string>("");
   const [revenueStartMonth, setRevenueStartMonth] = useState<string>("");
@@ -194,35 +202,44 @@ export const YouTubeAnalytics: React.FC = () => {
     const today = new Date();
     const priorDate = new Date();
     priorDate.setMonth(priorDate.getMonth() - 2);
-    
+
     // Analytics date range (last 2 months)
     setAnalyticsStartDate(priorDate.toISOString().slice(0, 10));
     setAnalyticsEndDate(today.toISOString().slice(0, 10));
 
     // Revenue months (first day of last month to first day of current month)
-    const firstDayThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const firstDayThisMonth = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      1
+    );
+    const firstDayLastMonth = new Date(
+      today.getFullYear(),
+      today.getMonth() - 1,
+      1
+    );
     setRevenueStartMonth(firstDayLastMonth.toISOString().slice(0, 7));
     setRevenueEndMonth(firstDayThisMonth.toISOString().slice(0, 7));
   }, [gapiLoaded]);
 
-
-  
   const fetchUserChannels = async () => {
     try {
       await window.gapi.client.load("youtube", "v3");
-      const response: YouTubeChannelsListResponse = await window.gapi.client.youtube.channels.list({
-        part: "snippet,contentOwnerDetails",
-        mine: true,
-        maxResults: 50
-      });
+      const response: YouTubeChannelsListResponse =
+        await window.gapi.client.youtube.channels.list({
+          part: "snippet,contentOwnerDetails",
+          mine: true,
+          maxResults: 50,
+        });
 
-      const channelList: Channel[] = response.result.items.map((item: GapiChannelItem) => ({
-        id: item.id,
-        title: item.snippet.title,
-        thumbnail: item.snippet.thumbnails?.default?.url ?? ""
-      }));
-      
+      const channelList: Channel[] = response.result.items.map(
+        (item: GapiChannelItem) => ({
+          id: item.id,
+          title: item.snippet.title,
+          thumbnail: item.snippet.thumbnails?.default?.url ?? "",
+        })
+      );
+
       setChannels(channelList);
     } catch (err) {
       console.error("Error fetching channels:", err);
@@ -231,14 +248,17 @@ export const YouTubeAnalytics: React.FC = () => {
   };
 
   const authenticate = async () => {
-    if (!gisLoaded || !gapiLoaded) return alert("Google scripts not loaded yet");
+    if (!gisLoaded || !gapiLoaded)
+      return showToast("Google scripts not loaded yet", "error");
 
     const tokenClient = window.google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
       scope: SCOPES,
       callback: async (tokenResponse: any) => {
         if (tokenResponse.access_token) {
-          window.gapi.client.setToken({ access_token: tokenResponse.access_token });
+          window.gapi.client.setToken({
+            access_token: tokenResponse.access_token,
+          });
           setIsSignedIn(true);
           localStorage.setItem("yt_token", tokenResponse.access_token);
 
@@ -280,15 +300,16 @@ export const YouTubeAnalytics: React.FC = () => {
       if (!window.gapi.client.youtubeAnalytics)
         await window.gapi.client.load("youtubeAnalytics", "v2");
 
-      const res: YouTubeAnalyticsReportResponse = await window.gapi.client.youtubeAnalytics.reports.query({
-        ids: "channel==MINE",
-        startDate: analyticsStartDate,
-        endDate: analyticsEndDate,
-        metrics:
-          "views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,subscribersGained",
-        dimensions: "day",
-        sort: "day",
-      });
+      const res: YouTubeAnalyticsReportResponse =
+        await window.gapi.client.youtubeAnalytics.reports.query({
+          ids: "channel==MINE",
+          startDate: analyticsStartDate,
+          endDate: analyticsEndDate,
+          metrics:
+            "views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,subscribersGained",
+          dimensions: "day",
+          sort: "day",
+        });
       setAnalytics(res.result);
     } catch (err) {
       console.error("Analytics fetch error", err);
@@ -298,65 +319,73 @@ export const YouTubeAnalytics: React.FC = () => {
     }
   };
 
-const fetchRevenue = async () => {
-  if (!isSignedIn) return;
-  setLoading(true);
-  setError("");
-  setRevenue(null);
+  const fetchRevenue = async () => {
+    if (!isSignedIn) return;
+    setLoading(true);
+    setError("");
+    setRevenue(null);
 
-  try {
-    if (!window.gapi.client.youtubeAnalytics) {
-      await window.gapi.client.load("youtubeAnalytics", "v2");
+    try {
+      if (!window.gapi.client.youtubeAnalytics) {
+        await window.gapi.client.load("youtubeAnalytics", "v2");
+      }
+
+      // Try channel-level revenue first (works for normal monetized channels)
+      const startDate = `${revenueStartMonth}-01`;
+      const endDate = `${revenueEndMonth}-01`;
+
+      const res: YouTubeAnalyticsReportResponse =
+        await window.gapi.client.youtubeAnalytics.reports.query({
+          ids:
+            revenueReportType === "channel"
+              ? "channel==MINE"
+              : "contentOwner==MINE",
+          startDate,
+          endDate,
+          metrics:
+            "estimatedRevenue,estimatedAdRevenue,estimatedRedPartnerRevenue,grossRevenue",
+          dimensions: "month",
+          sort: "month",
+          currency: "USD",
+        });
+
+      // Check if data exists
+      if (!res.result || !res.result.rows || res.result.rows.length === 0) {
+        setError(
+          revenueReportType === "channel"
+            ? "Channel revenue data is unavailable. Your channel might not be monetized."
+            : "Content owner revenue data is unavailable. You might not have content owner access."
+        );
+        return;
+      }
+
+      setRevenue(res.result);
+    } catch (err: any) {
+      console.error("Revenue fetch error", err);
+
+      if (err.status === 404) {
+        setError(
+          revenueReportType === "channel"
+            ? "Revenue data not found. Please ensure your channel is monetized."
+            : "Revenue data not found. Only YouTube Content Owners (MCNs) can access content owner reports."
+        );
+      } else if (
+        err.result?.error?.errors?.some((e: any) => e.reason === "invalid")
+      ) {
+        setError(
+          `Revenue fetch failed: ${
+            revenueReportType === "channel"
+              ? "channel-level metrics are not accessible"
+              : "content owner-level metrics are not accessible"
+          }`
+        );
+      } else {
+        setError("Failed to fetch revenue data.");
+      }
+    } finally {
+      setLoading(false);
     }
-
-    // Try channel-level revenue first (works for normal monetized channels)
-    const startDate = `${revenueStartMonth}-01`;
-    const endDate = `${revenueEndMonth}-01`;
-    
-    const res: YouTubeAnalyticsReportResponse = await window.gapi.client.youtubeAnalytics.reports.query({
-      ids: revenueReportType === 'channel' ? "channel==MINE" : "contentOwner==MINE",
-      startDate,
-      endDate,
-      metrics: "estimatedRevenue,estimatedAdRevenue,estimatedRedPartnerRevenue,grossRevenue",
-      dimensions: "month",
-      sort: "month",
-      currency: "USD",
-    });
-
-    // Check if data exists
-    if (!res.result || !res.result.rows || res.result.rows.length === 0) {
-      setError(
-        revenueReportType === 'channel'
-          ? "Channel revenue data is unavailable. Your channel might not be monetized."
-          : "Content owner revenue data is unavailable. You might not have content owner access."
-      );
-      return;
-    }
-
-    setRevenue(res.result);
-  } catch (err: any) {
-    console.error("Revenue fetch error", err);
-
-    if (err.status === 404) {
-      setError(
-        revenueReportType === 'channel'
-          ? "Revenue data not found. Please ensure your channel is monetized."
-          : "Revenue data not found. Only YouTube Content Owners (MCNs) can access content owner reports."
-      );
-    } else if (err.result?.error?.errors?.some((e: any) => e.reason === "invalid")) {
-      setError(
-        `Revenue fetch failed: ${revenueReportType === 'channel' 
-          ? 'channel-level metrics are not accessible' 
-          : 'content owner-level metrics are not accessible'}`
-      );
-    } else {
-      setError("Failed to fetch revenue data.");
-    }
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   const fetchPublicStats = async (id: string) => {
     setLoading(true);
@@ -365,7 +394,7 @@ const fetchRevenue = async () => {
       const res = await fetch(
         `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${id}&key=${API_KEY}`
       );
-  const data: PublicChannelApiResponse = await res.json();
+      const data: PublicChannelApiResponse = await res.json();
       if (data.items && data.items.length > 0) {
         const ch = data.items[0];
         setStats({
@@ -398,12 +427,14 @@ const fetchRevenue = async () => {
 
     try {
       // 1. Get uploads playlist ID
-      const channelResponse: YouTubeChannelsListResponse = await window.gapi.client.youtube.channels.list({
-        mine: true,
-        part: "contentDetails",
-      });
+      const channelResponse: YouTubeChannelsListResponse =
+        await window.gapi.client.youtube.channels.list({
+          mine: true,
+          part: "contentDetails",
+        });
       const uploadsPlaylistId =
-        channelResponse.result.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+        channelResponse.result.items?.[0]?.contentDetails?.relatedPlaylists
+          ?.uploads;
 
       if (!uploadsPlaylistId) {
         setError("Could not find your uploads playlist.");
@@ -415,12 +446,13 @@ const fetchRevenue = async () => {
       let nextPageToken: string | undefined = undefined;
       const allVideos: any[] = [];
       do {
-        const playlistItemsResponse: PlaylistItemsListResponse = await window.gapi.client.youtube.playlistItems.list({
-          playlistId: uploadsPlaylistId,
-          part: "snippet,contentDetails",
-          maxResults: 50,
-          pageToken: nextPageToken,
-        });
+        const playlistItemsResponse: PlaylistItemsListResponse =
+          await window.gapi.client.youtube.playlistItems.list({
+            playlistId: uploadsPlaylistId,
+            part: "snippet,contentDetails",
+            maxResults: 50,
+            pageToken: nextPageToken,
+          });
 
         const items = playlistItemsResponse.result.items || [];
         allVideos.push(...items);
@@ -431,17 +463,21 @@ const fetchRevenue = async () => {
       const videoRevenueData: VideoRevenueItem[] = [];
       for (const video of allVideos) {
         const videoId = video.contentDetails.videoId;
-        const response: YouTubeAnalyticsReportResponse = await window.gapi.client.youtubeAnalytics.reports.query({
-          ids: "channel==MINE",
-          startDate: analyticsStartDate,
-          endDate: analyticsEndDate,
-          metrics: "estimatedRevenue",
-          dimensions: "video",
-          filters: `video==${videoId}`,
-        });
+        const response: YouTubeAnalyticsReportResponse =
+          await window.gapi.client.youtubeAnalytics.reports.query({
+            ids: "channel==MINE",
+            startDate: analyticsStartDate,
+            endDate: analyticsEndDate,
+            metrics: "estimatedRevenue",
+            dimensions: "video",
+            filters: `video==${videoId}`,
+          });
 
         const revenueValue = response.result.rows?.[0]?.[1] ?? 0;
-        const revenueNumber = typeof revenueValue === 'string' ? Number(revenueValue) : (revenueValue as number);
+        const revenueNumber =
+          typeof revenueValue === "string"
+            ? Number(revenueValue)
+            : (revenueValue as number);
 
         videoRevenueData.push({
           id: videoId,
@@ -492,7 +528,7 @@ const fetchRevenue = async () => {
             backgroundColor: "rgba(153, 102, 255, 0.5)",
             borderColor: "rgba(153, 102, 255, 1)",
             borderWidth: 1,
-          }
+          },
         ],
       }
     : null;
@@ -548,7 +584,9 @@ const fetchRevenue = async () => {
       {isSignedIn && (
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800">Analytics Date Range</h3>
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">
+              Analytics Date Range
+            </h3>
             <div className="space-y-4">
               <div className="flex flex-col">
                 <label className="text-sm text-gray-600 mb-1">From</label>
@@ -578,13 +616,19 @@ const fetchRevenue = async () => {
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800">Revenue Period</h3>
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">
+              Revenue Period
+            </h3>
             <div className="space-y-4">
               <div className="flex flex-col">
-                <label className="text-sm text-gray-600 mb-1">Report Type</label>
+                <label className="text-sm text-gray-600 mb-1">
+                  Report Type
+                </label>
                 <select
                   value={revenueReportType}
-                  onChange={(e) => setRevenueReportType(e.target.value as RevenueReportType)}
+                  onChange={(e) =>
+                    setRevenueReportType(e.target.value as RevenueReportType)
+                  }
                   className="border p-2 rounded focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                 >
                   <option value="channel">Channel Level</option>
@@ -592,7 +636,9 @@ const fetchRevenue = async () => {
                 </select>
               </div>
               <div className="flex flex-col">
-                <label className="text-sm text-gray-600 mb-1">Start Month</label>
+                <label className="text-sm text-gray-600 mb-1">
+                  Start Month
+                </label>
                 <input
                   type="month"
                   value={revenueStartMonth}
@@ -635,21 +681,23 @@ const fetchRevenue = async () => {
 
         {analyticsChartData && (
           <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <h3 className="font-bold text-xl mb-4 text-gray-800">Channel Performance</h3>
+            <h3 className="font-bold text-xl mb-4 text-gray-800">
+              Channel Performance
+            </h3>
             <div className="aspect-4/3 w-full">
-              <Line 
+              <Line
                 data={analyticsChartData}
                 options={{
                   responsive: true,
                   maintainAspectRatio: true,
                   plugins: {
                     legend: {
-                      position: 'top',
+                      position: "top",
                     },
                     title: {
-                      display: false
-                    }
-                  }
+                      display: false,
+                    },
+                  },
                 }}
               />
             </div>
@@ -659,16 +707,18 @@ const fetchRevenue = async () => {
         {revenue === null && isSignedIn ? (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <p className="text-yellow-800 text-center">
-              Revenue data is only available for YouTube content owners.
-              Click "Fetch Revenue" to check if you have access.
+              Revenue data is only available for YouTube content owners. Click
+              "Fetch Revenue" to check if you have access.
             </p>
           </div>
         ) : revenueChartData ? (
           <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <h3 className="font-bold text-xl mb-4 text-gray-800">Revenue Overview</h3>
+            <h3 className="font-bold text-xl mb-4 text-gray-800">
+              Revenue Overview
+            </h3>
             <div className="aspect-4/3 w-full">
-              <Bar 
-                data={revenueChartData} 
+              <Bar
+                data={revenueChartData}
                 options={{
                   responsive: true,
                   maintainAspectRatio: true,
@@ -676,20 +726,21 @@ const fetchRevenue = async () => {
                     y: {
                       beginAtZero: true,
                       ticks: {
-                        callback: (value) => `$${value}`
-                      }
-                    }
+                        callback: (value) => `$${value}`,
+                      },
+                    },
                   },
                   plugins: {
                     legend: {
-                      position: 'top',
+                      position: "top",
                     },
                     tooltip: {
                       callbacks: {
-                        label: (context) => `${context.dataset.label}: $${context.raw}`
-                      }
-                    }
-                  }
+                        label: (context) =>
+                          `${context.dataset.label}: $${context.raw}`,
+                      },
+                    },
+                  },
                 }}
               />
             </div>
@@ -699,7 +750,9 @@ const fetchRevenue = async () => {
 
       {isSignedIn && channels.length > 0 && (
         <div className="mb-6">
-          <h3 className="text-lg font-semibold mb-4 text-gray-800">Your YouTube Channels</h3>
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">
+            Your YouTube Channels
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {channels.map((channel) => (
               <div
@@ -717,7 +770,9 @@ const fetchRevenue = async () => {
                     className="w-10 h-10 rounded-full"
                   />
                   <div>
-                    <h4 className="font-medium text-gray-900 line-clamp-1">{channel.title}</h4>
+                    <h4 className="font-medium text-gray-900 line-clamp-1">
+                      {channel.title}
+                    </h4>
                     <p className="text-sm text-gray-500">ID: {channel.id}</p>
                   </div>
                 </div>
@@ -765,7 +820,9 @@ const fetchRevenue = async () => {
           <p className="mb-1">Views: {stats.views}</p>
           <p className="mb-1">Videos: {stats.videos}</p>
           {stats.description && (
-            <p className="mt-2 text-gray-700 text-center">{stats.description}</p>
+            <p className="mt-2 text-gray-700 text-center">
+              {stats.description}
+            </p>
           )}
         </div>
       )}
@@ -782,23 +839,37 @@ const fetchRevenue = async () => {
               disabled={isFetchingVideos}
               className="bg-teal-600 text-white px-6 py-2 rounded hover:bg-teal-700 disabled:bg-gray-400"
             >
-              {isFetchingVideos ? "Fetching Video Revenues..." : "Fetch Video Revenues"}
+              {isFetchingVideos
+                ? "Fetching Video Revenues..."
+                : "Fetch Video Revenues"}
             </button>
           </div>
 
-          {isFetchingVideos && <p className="text-center font-semibold">Loading video revenues...</p>}
+          {isFetchingVideos && (
+            <p className="text-center font-semibold">
+              Loading video revenues...
+            </p>
+          )}
 
           {videoRevenues.length > 0 && (
             <div className="bg-white p-6 rounded-lg shadow-sm border mt-6">
-              <h3 className="font-bold text-xl mb-4 text-gray-800">Video Revenue Details</h3>
+              <h3 className="font-bold text-xl mb-4 text-gray-800">
+                Video Revenue Details
+              </h3>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
                         Video
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
                         Estimated Revenue (USD)
                       </th>
                     </tr>
@@ -809,15 +880,23 @@ const fetchRevenue = async () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="shrink-0 h-10 w-10">
-                              <img className="h-10 w-10 rounded-full" src={video.thumbnail} alt="" />
+                              <img
+                                className="h-10 w-10 rounded-full"
+                                src={video.thumbnail}
+                                alt=""
+                              />
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{video.title}</div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {video.title}
+                              </div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">${video.revenue.toFixed(2)}</div>
+                          <div className="text-sm text-gray-900">
+                            ${video.revenue.toFixed(2)}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -831,5 +910,3 @@ const fetchRevenue = async () => {
     </div>
   );
 };
-
- 
