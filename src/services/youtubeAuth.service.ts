@@ -70,6 +70,7 @@ export const youtubeAuthService = {
       };
 
       script.onerror = (ev: any) => {
+        console.log("Script error event:", ev);
         cleanup();
         reject(
           new Error(
