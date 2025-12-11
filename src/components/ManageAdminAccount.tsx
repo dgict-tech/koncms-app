@@ -58,9 +58,10 @@ const ManageAdminAccount: React.FC = () => {
         // Try to fetch available channels from backend first
         try {
           const { data: chResp } = await Axios_get(
-            `${BACKEND_URL}/channels/${authUserId}`,
+            `${BACKEND_URL}/get-auth-channel/${authUserId}`,
             UserAuthorization()
           );
+
           const raw = chResp.data || chResp || [];
           // normalize channel objects to { channelId, channelTitle, thumbnail }
           const normalized = raw.map((c: any) => ({
