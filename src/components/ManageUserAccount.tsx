@@ -165,16 +165,16 @@ const ManageUserAccount: React.FC = () => {
 
   if (!user || user === "null") return null;
 
-  if (user.user.role !== "super_admin") {
-    return (
-      <div className="p-6">
-        <h2 className="text-lg font-semibold">Access denied</h2>
-        <p className="text-sm text-gray-600">
-          Only super admins can manage users.
-        </p>
-      </div>
-    );
-  }
+  // if (user.user.role !== "super_admin") {
+  //   return (
+  //     <div className="p-6">
+  //       <h2 className="text-lg font-semibold">Access denied</h2>
+  //       <p className="text-sm text-gray-600">
+  //         Only super admins can manage users.
+  //       </p>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
