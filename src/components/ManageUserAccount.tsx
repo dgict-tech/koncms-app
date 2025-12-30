@@ -1,14 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { BACKEND_URL } from "../services/youtubeAuth.service";
 import {
-  BACKEND_URL,
-  youtubeAuthService,
-} from "../services/youtubeAuth.service";
-import { Axios_get, assignVideoToUser } from "../services/api";
+  Axios_get,
+  assignVideoToUser,
+  fetchAllVideos,
+  fetchUserAssignedVideos,
+  removeUserAssignedVideo,
+} from "../services/api";
 import { UserAuthorization } from "../services/auth";
 import { useAuth } from "../hooks/useAuth";
-import { fetchChannelVideos } from "../services/youtube.service";
 import { useToast } from "./ToastProvider";
 
 const ManageUserAccount: React.FC = () => {
@@ -19,14 +21,14 @@ const ManageUserAccount: React.FC = () => {
   const { showToast } = useToast();
 
   const [profile, setProfile] = useState<any>(null);
-  const [channels, setChannels] = useState<any[]>([]);
-  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(
-    null
-  );
+  // const [serverVideos, setServerVideos] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
+  const [assignedVideos, setAssignedVideos] = useState<any[]>([]);
   const [videoFilter, setVideoFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadingVideos, setLoadingVideos] = useState(false);
+  const [loadingAssignedVideos, setLoadingAssignedVideos] = useState(false);
+  const [removing, setRemoving] = useState<Record<string, boolean>>({});
   const [assigning, setAssigning] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -40,31 +42,16 @@ const ManageUserAccount: React.FC = () => {
           UserAuthorization()
         );
         const raw = userResp.data || userResp || {};
+        console.log("Fetched user profile", raw);
         setProfile(raw);
 
         // fetch available channels (same approach as ManageAdmin)
         try {
-          const { data: chResp } = await Axios_get(
-            `${BACKEND_URL}/get-auth-channel/${authUserId}`,
-            UserAuthorization()
-          );
-          const rawCh = chResp.data || chResp || [];
-          const normalized = rawCh.map((c: any) => ({
-            channelId: c.channelId ?? c.id ?? c._id ?? c,
-            channelTitle:
-              c.channelTitle ?? c.title ?? c.snippet?.title ?? "Untitled",
-            raw: c,
-          }));
-          setChannels(normalized);
+          handleLoadAllVideos();
+          // also load videos assigned to this user from the explicit endpoint
+          handleLoadAssignedVideos();
         } catch (err) {
           console.log(err);
-          const local = await youtubeAuthService.getStoredChannels();
-          const normalized = (local || []).map((c: any) => ({
-            channelId: c.channelId ?? c.id ?? c,
-            channelTitle: c.channelTitle ?? c.title ?? "Untitled",
-            raw: c,
-          }));
-          setChannels(normalized || []);
         }
       } catch (err) {
         console.error("Failed to load user or channels", err);
@@ -77,36 +64,65 @@ const ManageUserAccount: React.FC = () => {
     load();
   }, [id, authUserId, showToast]);
 
-  const handleSelectChannel = async (chId: string) => {
-    setSelectedChannelId(chId);
+  const handleLoadAllVideos = async () => {
     setLoadingVideos(true);
     setVideos([]);
     try {
-      // find channel token in local storage (youtubeAuthService)
-      const stored = await youtubeAuthService.getStoredChannels();
-      const channelToken = (stored || []).find(
-        (c: any) => c.channelId === chId || c.id === chId || c._id === chId
-      );
-      const access_token = channelToken?.access_token;
-      if (!access_token) {
-        showToast(
-          "No access token found for this channel. Please connect it first.",
-          "error"
-        );
-        setLoadingVideos(false);
-        return;
-      }
-
-      const vids = await fetchChannelVideos(access_token, chId, 50);
-      setVideos(vids || []);
+      const res = await fetchAllVideos(UserAuthorization());
+      console.log("Fetched all videos", res);
+      // alert("Fetched all videos from server.");
+      const list = res.data?.data || res.data || [];
+      // setServerVideos(list || []);
+      // normalize to expected video shape if backend stores different keys
+      const normalized = (list || []).map((v: any) => ({
+        id: v.videoId ?? v.id ?? v._id ?? v.id,
+        channelId: v.channelId ?? v.channel?.id ?? v.channel_id ?? null,
+        title: v.title ?? v.name ?? v.videoTitle ?? "Untitled",
+        thumbnail: v.thumbnail ?? v.thumb ?? v.thumbnail_url ?? "/icon2.png",
+        views: v.views ?? v.viewCount ?? 0,
+        revenue: v.revenue ?? v.estimatedRevenue ?? 0,
+        raw: v,
+      }));
+      setVideos(normalized || []);
     } catch (err) {
-      console.error("Failed to load videos", err);
-      showToast(
-        "Failed to load channel videos. See console for details.",
-        "error"
-      );
+      console.error("Failed to load server videos", err);
+      showToast("Failed to load server videos.", "error");
     } finally {
       setLoadingVideos(false);
+    }
+  };
+
+  const handleLoadAssignedVideos = async () => {
+    if (!id) return;
+    setLoadingAssignedVideos(true);
+    setAssignedVideos([]);
+    try {
+      const res = await fetchUserAssignedVideos(id, UserAuthorization());
+      const list = res.data?.data || res.data || [];
+      console.log("Fetched assigned videos for user", res);
+      const normalized = (list || []).map((v: any) => ({
+        id: v.id ?? v.video_id ?? v._id,
+        channelId:
+          v.channel_id ?? v.channel ?? v.channelId ?? v.channel?.id ?? null,
+        title:
+          v.title ?? v.name ?? v.videoTitle ?? v.video?.title ?? "Untitled",
+        thumbnail:
+          v.thumbnail ??
+          v.thumb ??
+          v.thumbnail_url ??
+          v.video?.thumbnail ??
+          "/icon2.png",
+        views: v.views ?? v.viewCount ?? v.video?.views ?? 0,
+        revenue: v.revenue ?? v.estimatedRevenue ?? v.video?.revenue ?? 0,
+        raw: v,
+      }));
+      setAssignedVideos(normalized || []);
+    } catch (err) {
+      console.error("Failed to load assigned videos", err);
+      showToast("Failed to load assigned videos.", "error");
+    } finally {
+      setLoadingAssignedVideos(false);
+      console.log("Finished loading assigned videos", loadingAssignedVideos);
     }
   };
 
@@ -114,17 +130,31 @@ const ManageUserAccount: React.FC = () => {
     (v.title || "").toLowerCase().includes(videoFilter.toLowerCase())
   );
 
-  const handleAssignVideo = async (videoId: string) => {
-    if (!id || !selectedChannelId) return;
+  const handleAssignVideo = async (video: any) => {
+    console.log("Assigning video", video);
+    const videoId = video?.id;
+    const chId = video?.raw.channel.channelId ?? null;
+
+    if (!id || !videoId || !chId) {
+      showToast("Missing video or channel id for assignment.", "error");
+      return;
+    }
     setAssigning((s) => ({ ...s, [videoId]: true }));
     try {
-      await assignVideoToUser(
-        id,
-        selectedChannelId,
-        videoId,
-        UserAuthorization()
-      );
+      await assignVideoToUser(id, chId, videoId, UserAuthorization());
       showToast("Video assigned to user.", "success");
+      // Optionally refresh profile to show assignment
+      try {
+        const { data: userResp } = await Axios_get(
+          `${BACKEND_URL}/${id}`,
+          UserAuthorization()
+        );
+        const raw = userResp.data || userResp || {};
+        setProfile(raw);
+      } catch (e) {
+        // ignore
+        console.error("Failed to refresh user profile", e);
+      }
     } catch (err) {
       console.error("Failed to assign video", err);
       showToast("Failed to assign video. See console for details.", "error");
@@ -168,65 +198,208 @@ const ManageUserAccount: React.FC = () => {
           <div className="text-center py-8">Loading…</div>
         ) : (
           <div>
-            <div className="mb-6 p-4 rounded-lg bg-gray-50">
-              <div className="font-medium text-gray-800">
-                {profile?.first_name} {profile?.last_name}
-              </div>
-              <div className="text-sm text-gray-600">{profile?.email}</div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                  Channels
-                </h4>
-                {channels.length === 0 ? (
-                  <div className="text-sm text-gray-500">
-                    No channels available
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    {channels.map((ch) => (
-                      <button
-                        key={ch.channelId}
-                        onClick={() => handleSelectChannel(ch.channelId)}
-                        className={`text-left px-3 py-2 rounded-md hover:bg-red-50 transition ${
-                          selectedChannelId === ch.channelId
-                            ? "bg-red-50 ring-1 ring-red-100"
-                            : "bg-white border border-gray-100"
-                        }`}
-                      >
-                        <div className="font-medium text-sm text-gray-800 truncate">
-                          {ch.channelTitle}
-                        </div>
-                        <div className="text-xs text-gray-500 truncate">
-                          {ch.channelId}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="md:col-span-2">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-semibold text-gray-700">
-                    Videos
-                  </h4>
-                  <div>
-                    <input
-                      placeholder="Search videos"
-                      value={videoFilter}
-                      onChange={(e) => setVideoFilter(e.target.value)}
-                      className="px-3 py-2 border rounded-md w-64"
+            <div>
+              <div className="flex items-center gap-6 mb-10 border-b border-gray-100 mt-10">
+                <div className=" ">
+                  <div className="w-20 h-20 ">
+                    <img
+                      src={
+                        profile?.profile_picture ||
+                        profile?.avatar ||
+                        "https://cdn-icons-png.flaticon.com/512/5045/5045878.png"
+                      }
+                      alt="User Profile"
+                      className="w-16 h-16 rounded-full object-cover border-4 border-red-500 shadow"
                     />
                   </div>
                 </div>
 
+                <div className="mb-6 p-4 rounded-lg">
+                  <div className="font-medium text-gray-800">
+                    {profile?.full_name}
+                  </div>
+                  <div className="text-sm text-gray-600">{profile?.email}</div>
+                </div>
+              </div>{" "}
+            </div>
+
+            {/* Assigned videos for this user */}
+            <div className="mt-6">
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                Assigned Videos
+              </h4>
+              <div className="space-y-3">
+                {(function getAssigned() {
+                  const raw = profile || {};
+                  const fallbackCandidates =
+                    raw.videos ||
+                    raw.userVideos ||
+                    raw.assignedVideos ||
+                    raw.videoAssignments ||
+                    raw.user_videos ||
+                    [];
+
+                  const candidates =
+                    Array.isArray(assignedVideos) && assignedVideos.length > 0
+                      ? assignedVideos
+                      : fallbackCandidates;
+
+                  if (!Array.isArray(candidates) || candidates.length === 0) {
+                    return (
+                      <div className="text-sm text-gray-500">
+                        No videos assigned
+                      </div>
+                    );
+                  }
+
+                  return candidates.map((item: any) => {
+                    const vid =
+                      item.videoId ??
+                      item.id ??
+                      item._id ??
+                      item.video?.id ??
+                      item.video_id ??
+                      item;
+                    const chid =
+                      item.channelId ??
+                      item.channel_id ??
+                      item.channel?.id ??
+                      item.channel ??
+                      null;
+                    const title =
+                      item.title ??
+                      item.videoTitle ??
+                      item.video?.title ??
+                      (item.raw && (item.raw.title || item.raw.videoTitle)) ??
+                      "Untitled";
+                    const revenue =
+                      item.revenue ??
+                      item.estimatedRevenue ??
+                      item.video?.revenue ??
+                      null;
+
+                    return (
+                      <div
+                        key={vid}
+                        className="flex items-center justify-between bg-white p-3 rounded shadow-sm"
+                      >
+                        <div>
+                          <div className="font-medium text-sm text-gray-800 truncate">
+                            {title} -
+                            <span className="text-green-400">
+                              {" $"}
+                              {typeof revenue === "number"
+                                ? `$${revenue.toFixed(2)}`
+                                : "0"}
+                            </span>
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Video: {vid} — Channel: {chid}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={async () => {
+                              const videoId =
+                                item.videoId ??
+                                item.id ??
+                                item._id ??
+                                item.video?.id ??
+                                item.video_id ??
+                                item;
+                              const channelId =
+                                item.channelId ??
+                                item.channel_id ??
+                                item.channel?.id ??
+                                item.channel ??
+                                item.raw?.channelId ??
+                                item.raw?.channel?.id ??
+                                null;
+                              if (!id || !videoId || !channelId) {
+                                showToast("Missing ids for removal.", "error");
+                                return;
+                              }
+                              setRemoving((s) => ({ ...s, [videoId]: true }));
+                              try {
+                                await removeUserAssignedVideo(
+                                  id,
+                                  videoId,
+                                  UserAuthorization()
+                                );
+                                showToast("Removed assigned video.", "success");
+                                // refresh assigned videos and profile
+                                try {
+                                  await handleLoadAssignedVideos();
+                                } catch (e) {
+                                  console.error(
+                                    "Failed to refresh assigned videos",
+                                    e
+                                  );
+                                }
+                                try {
+                                  const { data: userResp } = await Axios_get(
+                                    `${BACKEND_URL}/${id}`,
+                                    UserAuthorization()
+                                  );
+                                  const raw = userResp.data || userResp || {};
+                                  setProfile(raw);
+                                } catch (e) {
+                                  console.error(
+                                    "Failed to refresh user profile",
+                                    e
+                                  );
+                                }
+                              } catch (err) {
+                                console.error(
+                                  "Failed to remove assigned video",
+                                  err
+                                );
+                                showToast(
+                                  "Failed to remove assigned video.",
+                                  "error"
+                                );
+                              } finally {
+                                setRemoving((s) => ({
+                                  ...s,
+                                  [videoId]: false,
+                                }));
+                              }
+                            }}
+                            disabled={!!removing[vid]}
+                            className="text-red-600 hover:text-red-800 text-sm"
+                            aria-label="Remove assigned video"
+                          >
+                            {removing[vid] ? "…" : "✖️"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+
+            <div className="mt-10 p-4 bg-gray-100 rounded-lg">
+              <div className="grid grid-cols-3 items-center my-10 gap-4">
+                <h4 className="col-span-1 text-md font-semibold text-gray-700">
+                  All Available Videos:
+                </h4>
+                <div className="col-span-1 flex items-center justify-center">
+                  <input
+                    placeholder="Search videos"
+                    value={videoFilter}
+                    onChange={(e) => setVideoFilter(e.target.value)}
+                    className="px-3 py-2 border rounded-md w-full border-gray-300 focus:border-gray-400 focus:outline-none"
+                  />
+                </div>
+                <div className="col-span-1" />
+              </div>
+
+              <div className="md:col-span-2">
                 {loadingVideos ? (
                   <div className="text-center py-8">Loading videos…</div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 ">
                     {filteredVideos.map((v) => (
                       <div
                         key={v.id}
@@ -249,7 +422,7 @@ const ManageUserAccount: React.FC = () => {
                         </div>
                         <div className="mt-3 flex items-center justify-end">
                           <button
-                            onClick={() => handleAssignVideo(v.id)}
+                            onClick={() => handleAssignVideo(v)}
                             disabled={!!assigning[v.id]}
                             className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm"
                           >

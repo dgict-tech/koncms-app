@@ -4,7 +4,8 @@ import {
   youtubeAuthService,
   type ChannelToken,
 } from "../services/youtubeAuth.service";
-import { fetchChannelVideos } from "../services/youtube.service";
+import { fetchVideosByChannel } from "../services/api";
+import { UserAuthorization } from "../services/auth";
 import yticon from "../assets/yticon.png";
 import { ArrowRight, PlayCircle } from "lucide-react";
 
@@ -20,39 +21,6 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
   const [videoRevenues, setVideoRevenues] = useState<{ [id: string]: number }>(
     {}
   );
-
-  /** ------------------------------------------------------
-   *  Fetch revenue for ONE video — runs in parallel
-   * ------------------------------------------------------ */
-  const fetchRevenueForVideo = async (videoId: string) => {
-    try {
-      window.gapi.client.setToken({
-        access_token: selectedChannel?.access_token,
-      });
-
-      await window.gapi.client.load("youtubeAnalytics", "v2");
-      await window.gapi.client.load("youtube", "v3");
-
-      const res = await window.gapi.client.youtubeAnalytics.reports.query({
-        ids: "channel==MINE",
-        startDate: "2023-01-01",
-        endDate: "2025-12-31",
-        metrics: "estimatedRevenue",
-        dimensions: "video",
-        filters: `video==${videoId}`,
-      });
-
-      const value = res.result.rows?.[0]?.[1] ?? 0;
-      const revenue = typeof value === "string" ? Number(value) : value;
-
-      setVideoRevenues((prev) => ({
-        ...prev,
-        [videoId]: Number.isFinite(revenue) ? revenue : 0,
-      }));
-    } catch (err) {
-      console.error("Revenue fetch error:", err);
-    }
-  };
 
   /** ------------------------------------------------------
    *  Load YouTube scripts + stored channels from localStorage,
@@ -82,7 +50,7 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
    *  Fetch videos + start revenue fetching IMMEDIATELY
    * ------------------------------------------------------ */
   useEffect(() => {
-    const loadVideosAndRevenue = async () => {
+    const loadVideos = async () => {
       if (!selectedChannel) {
         setVideos([]);
         return;
@@ -93,17 +61,46 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
       setLoadingModal(true);
 
       try {
-        const videoList = await fetchChannelVideos(
-          selectedChannel.access_token,
-          selectedChannel.channelId
+        // Fetch videos from backend instead of calling Google APIs directly
+        const resp = await fetchVideosByChannel(
+          selectedChannel.channelId,
+          UserAuthorization()
         );
 
-        setVideos(videoList || []);
+        const rawList = resp.data?.data || resp.data || [];
 
-        // Fetch revenue for each video immediately in parallel
-        for (const vid of videoList || []) {
-          fetchRevenueForVideo(vid.id);
+        // normalize backend video shape to what UI expects
+        const normalized = (rawList || []).map((item: any) => ({
+          id:
+            item.video_id ??
+            item.id ??
+            item.videoId ??
+            item._id ??
+            item.video?.id,
+          title:
+            item.title ?? item.videoTitle ?? item.video?.title ?? "Untitled",
+          thumbnail:
+            item.thumbnail ??
+            item.thumb ??
+            item.video?.thumbnail ??
+            "/icon2.png",
+          publishedAt:
+            item.publishedAt ?? item.published_at ?? item.created_at ?? null,
+          description: item.description ?? item.video?.description ?? "",
+          revenue: Number(item.revenue ?? item.estimatedRevenue ?? 0) || 0,
+          views: Number(item.views ?? item.viewCount ?? 0) || 0,
+        }));
+
+        setVideos(normalized || []);
+
+        // Initialize revenue state from backend values and fetch analytics
+        const initialRevs: { [id: string]: number } = {};
+        for (const v of normalized) {
+          initialRevs[v.id] = v.revenue ?? 0;
         }
+        setVideoRevenues(initialRevs);
+
+        // Backend provides revenue; no client-side gapi fallback required
       } catch (err) {
         console.error(err);
         setVideos([]);
@@ -112,7 +109,7 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
       }
     };
 
-    loadVideosAndRevenue();
+    loadVideos();
   }, [selectedChannel]);
 
   /** ------------------------------------------------------

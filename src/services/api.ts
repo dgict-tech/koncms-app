@@ -237,6 +237,56 @@ export async function assignVideoToUser(
 }
 
 /**
+ * Fetch all videos stored on the backend (admin scope)
+ */
+export async function fetchAllVideos(
+  header: AxiosRequestConfig
+): Promise<AxiosResponse<any>> {
+  const url = `${API_URL}admin/server_videos/all`;
+  return Axios_get(url, header);
+}
+
+/**
+ * Fetch videos for a specific channel from the backend
+ * Backend endpoint: GET /admin/videos/:channelId
+ */
+export async function fetchVideosByChannel(
+  channelId: string,
+  header: AxiosRequestConfig
+): Promise<AxiosResponse<any>> {
+  const url = `${API_URL}admin/videos/${channelId}`;
+  return Axios_get(url, header);
+}
+
+/**
+ * Fetch videos assigned to a specific user (admin scope)
+ */
+export async function fetchUserAssignedVideos(
+  userId: string,
+  header: AxiosRequestConfig
+): Promise<AxiosResponse<any>> {
+  const url = `${API_URL}admin/user-videos/${userId}`;
+  return Axios_get(url, header);
+}
+
+/**
+ * Remove an assigned video from a user (admin scope)
+ * expected body: { userId, channelId, videoId }
+ */
+export async function removeUserAssignedVideo(
+  userId: string,
+  videoId: string,
+  header: AxiosRequestConfig
+): Promise<AxiosResponse<any>> {
+  const url = `${API_URL}admin/user-videos/remove`;
+  const config: AxiosRequestConfig = {
+    ...(header || {}),
+    data: { userId, videoId },
+  };
+  return Axios_delete(url, config);
+}
+
+/**
  * Assign multiple channels to an admin. Sends an array of channel IDs.
  */
 export async function assignChannelsToAdmin(
