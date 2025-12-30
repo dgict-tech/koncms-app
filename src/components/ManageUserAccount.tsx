@@ -380,7 +380,7 @@ const ManageUserAccount: React.FC = () => {
             </div>
 
             <div className="mt-10 p-4 bg-gray-100 rounded-lg">
-              <div className="grid grid-cols-3 items-center my-10 gap-4">
+              <div className="grid grid-cols-3 items-center mb-10 mt-6 gap-4">
                 <h4 className="col-span-1 text-md font-semibold text-gray-700">
                   All Available Videos:
                 </h4>
@@ -389,7 +389,7 @@ const ManageUserAccount: React.FC = () => {
                     placeholder="Search videos"
                     value={videoFilter}
                     onChange={(e) => setVideoFilter(e.target.value)}
-                    className="px-3 py-2 border rounded-md w-full border-gray-300 focus:border-gray-400 focus:outline-none"
+                    className="px-3 py-2 border rounded-md w-full border-gray-300 bg-white focus:border-gray-400 focus:outline-none"
                   />
                 </div>
                 <div className="col-span-1" />
@@ -399,7 +399,7 @@ const ManageUserAccount: React.FC = () => {
                 {loadingVideos ? (
                   <div className="text-center py-8">Loading videos…</div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 ">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 ">
                     {filteredVideos.map((v) => (
                       <div
                         key={v.id}

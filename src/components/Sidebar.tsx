@@ -79,7 +79,11 @@ export default function Sidebar({ isOpen, onClose, user }: SidebarProps) {
             onClick={onClose}
           >
             <LayoutDashboard size={18} />
-            Dashboard
+            {user.user.role !== "user" ? (
+              <span className="ml-2">Dashboard</span>
+            ) : (
+              <span className="ml-2">Video Revenue</span>
+            )}
           </NavLink>
           {user.user.role != "user" && (
             <NavLink
@@ -104,28 +108,30 @@ export default function Sidebar({ isOpen, onClose, user }: SidebarProps) {
             {/* <span className="text-xs absolute right-0 bg-green-500 text-white px-2 py-0.5 rounded-md">
               Active
             </span> */}
-
-            <NavLink
-              to="/account/videos-analytics"
-              className={({ isActive }) =>
-                `${linkClass} ${isActive ? activeClass : ""} mb-3`
-              }
-              onClick={onClose}
-            >
-              <VideoIcon size={18} />
-              Video Analytics
-            </NavLink>
-
-            <NavLink
-              to="/account/revenue-analytics"
-              className={({ isActive }) =>
-                `${linkClass} ${isActive ? activeClass : ""} mb-3`
-              }
-              onClick={onClose}
-            >
-              <DollarSignIcon size={18} />
-              Revenue Analytics
-            </NavLink>
+            {user.user.role != "user" && (
+              <NavLink
+                to="/account/videos-analytics"
+                className={({ isActive }) =>
+                  `${linkClass} ${isActive ? activeClass : ""} mb-3`
+                }
+                onClick={onClose}
+              >
+                <VideoIcon size={18} />
+                Video Analytics
+              </NavLink>
+            )}
+            {user.user.role != "user" && (
+              <NavLink
+                to="/account/revenue-analytics"
+                className={({ isActive }) =>
+                  `${linkClass} ${isActive ? activeClass : ""} mb-3`
+                }
+                onClick={onClose}
+              >
+                <DollarSignIcon size={18} />
+                Revenue Analytics
+              </NavLink>
+            )}
           </div>
           {user.user.role != "user" && (
             <hr className="my-3 border-red-100 border-opacity-30" />

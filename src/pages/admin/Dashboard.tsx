@@ -8,6 +8,7 @@ import { Menu } from "lucide-react";
 import YouTubeConnect from "../../components/YouTubeConnect";
 import Videos from "../../components/Videos";
 import VideoAnalytics from "../../components/VideosAnalytics";
+import VideoRevenue from "../../components/VideoRevenue";
 import CreateAdminAccount from "../../components/CreateAdminAccount";
 import AllAdminAccount from "../../components/AllAdminAccount";
 
@@ -39,7 +40,7 @@ const DashboardSetUp: React.FC<AccountSetUpProps> = ({ user }) => {
       <div>
         {user.user.role !== "user" && <YouTubeConnect user={user} />}
 
-        {user.user.role == "user" && <p>Videos and Income</p>}
+        {user.user.role == "user" && <VideoRevenue />}
       </div>
     </main>
   );

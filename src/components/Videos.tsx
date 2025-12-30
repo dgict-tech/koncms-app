@@ -8,6 +8,7 @@ import { fetchVideosByChannel } from "../services/api";
 import { UserAuthorization } from "../services/auth";
 import yticon from "../assets/yticon.png";
 import { ArrowRight, PlayCircle } from "lucide-react";
+import computeRevenueShare from "../utils/revenueShare";
 
 const Videos: React.FC<{ user: any }> = ({ user }) => {
   const [channels, setChannels] = useState<ChannelToken[]>([]);
@@ -119,6 +120,15 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
     console.log("Channels updated:", channels);
   }, [channels]);
 
+  const revenueShare = videos.reduce(
+    (s, v) => s + computeRevenueShare(Number(v.revenue || 0), user?.user?.role),
+    0
+  );
+
+  const revenueReward = videos.reduce((s, v) => s + Number(v.revenue || 0), 0);
+
+  const taxReven = revenueReward - revenueShare;
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen relative">
       {/* Custom animation */}
@@ -193,6 +203,66 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
             Videos from {selectedChannel.channelTitle}
           </h3>
+
+          {/* Metrics */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-16">
+            <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-white to-gray-50 rounded-lg shadow-sm">
+              <div className="p-3 bg-red-50 text-red-600 rounded-lg">
+                <svg
+                  className="w-6 h-6"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <path d="M3 7h18M3 12h18M3 17h18" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">Total Videos</div>
+                <div className="text-2xl font-semibold text-gray-800">
+                  {videos.length}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-white to-gray-50 rounded-lg shadow-sm">
+              <div className="p-3 bg-green-50 text-green-600 rounded-lg">
+                <svg
+                  className="w-6 h-6"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <path d="M12 1v22M7 5h10" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">Total Revenue (80%)</div>
+                <div className="text-2xl font-semibold text-gray-800">
+                  ${revenueShare.toFixed(2)}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-white to-gray-50 rounded-lg shadow-sm">
+              <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+                <svg
+                  className="w-6 h-6"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <path d="M12 1v22M17 5H7" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">Total Tax (20%)</div>
+                <div className="text-2xl font-semibold text-gray-800">
+                  ${taxReven.toFixed(2)}
+                </div>
+              </div>
+            </div>
+          </div>
 
           {!loadingModal && videos.length === 0 ? (
             <div className="text-center text-gray-500 py-10 bg-white rounded-xl shadow-sm">
