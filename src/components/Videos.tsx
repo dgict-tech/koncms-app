@@ -13,14 +13,20 @@ import computeRevenueShare from "../utils/revenueShare";
 const Videos: React.FC<{ user: any }> = ({ user }) => {
   const [channels, setChannels] = useState<ChannelToken[]>([]);
   const [selectedChannel, setSelectedChannel] = useState<ChannelToken | null>(
-    null
+    null,
   );
   const [videos, setVideos] = useState<any[]>([]);
   const [loadingModal, setLoadingModal] = useState(false);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(30);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
   // Revenue state
   const [videoRevenues, setVideoRevenues] = useState<{ [id: string]: number }>(
-    {}
+    {},
   );
 
   /** ------------------------------------------------------
@@ -32,7 +38,7 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
       await youtubeAuthService.loadScripts();
 
       const savedChannels = await youtubeAuthService.getStoredChannels(
-        user ?? null
+        user ?? null,
       );
 
       console.log("Loaded channels:", savedChannels);
@@ -41,7 +47,7 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
       setSelectedChannel(
         (prev) =>
           prev ??
-          (savedChannels && savedChannels.length > 0 ? savedChannels[0] : null)
+          (savedChannels && savedChannels.length > 0 ? savedChannels[0] : null),
       );
     };
     init();
@@ -54,6 +60,8 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
     const loadVideos = async () => {
       if (!selectedChannel) {
         setVideos([]);
+        setTotalItems(0);
+        setTotalPages(0);
         return;
       }
 
@@ -62,16 +70,24 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
       setLoadingModal(true);
 
       try {
-        // Fetch videos from backend instead of calling Google APIs directly
+        // Fetch videos from backend with pagination
         const resp = await fetchVideosByChannel(
           selectedChannel.channelId,
-          UserAuthorization()
+          UserAuthorization(),
+          currentPage,
+          limit,
         );
 
-        const rawList = resp.data?.data || resp.data || [];
+        // Extract data and pagination from response
+        const items = resp.data?.data || [];
+        const paginationData = resp.data?.pagination || {};
+
+        // Set pagination state from backend metadata
+        setTotalItems(paginationData.totalItems || 0);
+        setTotalPages(paginationData.totalPages || 0);
 
         // normalize backend video shape to what UI expects
-        const normalized = (rawList || []).map((item: any) => ({
+        const normalized = (items || []).map((item: any) => ({
           id:
             item.video_id ??
             item.id ??
@@ -90,28 +106,32 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
           description: item.description ?? item.video?.description ?? "",
           revenue: Number(item.revenue ?? item.estimatedRevenue ?? 0) || 0,
           views: Number(item.views ?? item.viewCount ?? 0) || 0,
+          duration: item.duration ?? item.video?.duration ?? 0,
+          likes: Number(item.likes ?? item.likeCount ?? 0) || 0,
+          comments: Number(item.comments ?? item.commentCount ?? 0) || 0,
+          status: item.status ?? item.video?.status ?? "published",
         }));
 
         setVideos(normalized || []);
 
-        // Initialize revenue state from backend values and fetch analytics
+        // Initialize revenue state from backend values
         const initialRevs: { [id: string]: number } = {};
         for (const v of normalized) {
           initialRevs[v.id] = v.revenue ?? 0;
         }
         setVideoRevenues(initialRevs);
-
-        // Backend provides revenue; no client-side gapi fallback required
       } catch (err) {
         console.error(err);
         setVideos([]);
+        setTotalItems(0);
+        setTotalPages(0);
       } finally {
         setLoadingModal(false);
       }
     };
 
     loadVideos();
-  }, [selectedChannel]);
+  }, [selectedChannel, currentPage, limit]);
 
   /** ------------------------------------------------------
    *  Debug: log when channels change
@@ -122,7 +142,7 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
 
   const revenueShare = videos.reduce(
     (s, v) => s + computeRevenueShare(Number(v.revenue || 0), user?.user?.role),
-    0
+    0,
   );
 
   const revenueReward = videos.reduce((s, v) => s + Number(v.revenue || 0), 0);
@@ -180,9 +200,12 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
                 value={selectedChannel?.channelId || ""}
                 onChange={(e) => {
                   const selected = channels.find(
-                    (c) => c.channelId === e.target.value
+                    (c) => c.channelId === e.target.value,
                   );
                   setSelectedChannel(selected || null);
+                  setCurrentPage(1);
+                  setTotalItems(0);
+                  setTotalPages(0);
                 }}
               >
                 <option value="">-- Select a Channel --</option>
@@ -269,57 +292,150 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
               No videos found for this channel.
             </div>
           ) : (
-            !loadingModal && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {videos.map((video) => (
-                  <div
-                    key={video.id}
-                    className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition transform hover:-translate-y-1 relative group"
-                  >
-                    {/* Thumbnail */}
-                    <div className="relative">
-                      <img
-                        src={video.thumbnail}
-                        alt={video.title}
-                        className="w-full h-44 object-cover"
-                      />
-                      <button
-                        onClick={() =>
-                          window.open(
-                            `https://www.youtube.com/watch?v=${video.id}`,
-                            "_blank"
-                          )
-                        }
-                        className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition"
-                      >
-                        <PlayCircle className="w-14 h-14 text-white drop-shadow-lg" />
-                      </button>
+            <>
+              {!loadingModal && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {videos.map((video) => (
+                    <div
+                      key={video.id}
+                      className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition transform hover:-translate-y-1 relative group"
+                    >
+                      {/* Thumbnail */}
+                      <div className="relative">
+                        <img
+                          src={video.thumbnail}
+                          alt={video.title}
+                          className="w-full h-44 object-cover"
+                        />
+                        <button
+                          onClick={() =>
+                            window.open(
+                              `https://www.youtube.com/watch?v=${video.id}`,
+                              "_blank",
+                            )
+                          }
+                          className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition"
+                        >
+                          <PlayCircle className="w-14 h-14 text-white drop-shadow-lg" />
+                        </button>
+                      </div>
+
+                      {/* Video Info */}
+                      <div className="p-4">
+                        <h4 className="text-sm font-medium text-gray-800 line-clamp-2">
+                          {video.title}
+                        </h4>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(video.publishedAt).toLocaleDateString()}
+                        </p>
+
+                        {/* Video Stats */}
+                        <div className="mt-2 space-y-1 text-xs text-gray-600">
+                          <p>Views: {(video.views || 0).toLocaleString()}</p>
+                          <p>Likes: {(video.likes || 0).toLocaleString()}</p>
+                          {video.comments > 0 && (
+                            <p>Comments: {video.comments.toLocaleString()}</p>
+                          )}
+                        </div>
+
+                        {/* Revenue */}
+                        {videoRevenues[video.id] === undefined ? (
+                          <p className="text-sm mt-2 text-gray-400">
+                            Loading revenue...
+                          </p>
+                        ) : (
+                          <p className="text-sm mt-2 text-green-600 font-medium">
+                            Revenue: ${videoRevenues[video.id].toFixed(2)}
+                          </p>
+                        )}
+                      </div>
                     </div>
+                  ))}
+                </div>
+              )}
 
-                    {/* Video Info */}
-                    <div className="p-4">
-                      <h4 className="text-sm font-medium text-gray-800 line-clamp-2">
-                        {video.title}
-                      </h4>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(video.publishedAt).toLocaleDateString()}
-                      </p>
+              {/* Pagination Controls */}
+              {!loadingModal && videos.length > 0 && (
+                <div className="mt-12 flex flex-col items-center gap-6">
+                  {/* Pagination Info */}
+                  <div className="text-center text-sm text-gray-600">
+                    <p>
+                      Showing {(currentPage - 1) * limit + 1} to{" "}
+                      {Math.min(currentPage * limit, totalItems)} of{" "}
+                      <span className="font-semibold">{totalItems}</span> videos
+                    </p>
+                  </div>
 
-                      {/* Revenue */}
-                      {videoRevenues[video.id] === undefined ? (
-                        <p className="text-sm mt-2 text-gray-400">
-                          Loading revenue...
-                        </p>
-                      ) : (
-                        <p className="text-sm mt-2 text-green-600 font-medium">
-                          Revenue: ${videoRevenues[video.id].toFixed(2)}
-                        </p>
+                  {/* Page Controls */}
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                    >
+                      Previous
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      {Array.from({ length: Math.min(5, totalPages) }).map(
+                        (_, idx) => {
+                          const pageNum = currentPage - 2 + idx;
+                          if (pageNum < 1 || pageNum > totalPages) return null;
+
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => setCurrentPage(pageNum)}
+                              className={`px-3 py-2 rounded-md transition ${
+                                pageNum === currentPage
+                                  ? "bg-red-500 text-white font-semibold"
+                                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        },
                       )}
                     </div>
+
+                    <button
+                      onClick={() =>
+                        setCurrentPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      disabled={currentPage === totalPages || totalPages === 0}
+                      className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                    >
+                      Next
+                    </button>
                   </div>
-                ))}
-              </div>
-            )
+
+                  {/* Limit Selector */}
+                  <div className="flex items-center gap-3">
+                    <label
+                      htmlFor="limit-select"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Videos per page:
+                    </label>
+                    <select
+                      id="limit-select"
+                      value={limit}
+                      onChange={(e) => {
+                        setLimit(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={30}>30</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

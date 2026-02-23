@@ -71,7 +71,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
 }
 
 export async function registerAdmin(
-  data: RegisterAdminParams
+  data: RegisterAdminParams,
 ): Promise<ApiResponse> {
   const res = await FetchRequest(`${API_URL}/admin/register`, {
     method: "POST",
@@ -93,7 +93,7 @@ export async function loginAdmin(data: LoginAdminParams): Promise<ApiResponse> {
 export async function Axios_post(
   url: string,
   data: any,
-  header: AxiosRequestConfig
+  header: AxiosRequestConfig,
 ): Promise<AxiosResponse<any>> {
   try {
     const response = await axios.post(url, data, header);
@@ -111,7 +111,7 @@ export async function Axios_post(
 // GET request
 export async function Axios_get(
   url: string,
-  header: AxiosRequestConfig
+  header: AxiosRequestConfig,
 ): Promise<AxiosResponse<any>> {
   try {
     const response = await axios.get(url, header); // fixed to GET
@@ -128,7 +128,7 @@ export async function Axios_get(
 
 export async function Axios_delete(
   url: string,
-  header: AxiosRequestConfig
+  header: AxiosRequestConfig,
 ): Promise<AxiosResponse<any>> {
   try {
     const response = await axios.delete(url, header); // fixed to GET
@@ -149,7 +149,7 @@ export async function Axios_delete(
 export async function updateAdminPermissions(
   adminId: string,
   permissions: Record<string, any>,
-  header: AxiosRequestConfig
+  header: AxiosRequestConfig,
 ): Promise<AxiosResponse<any>> {
   const url = `${API_URL}admin/permissions/${adminId}`;
   try {
@@ -168,7 +168,7 @@ export async function updateAdminPermissions(
  */
 export async function getAdminPermissions(
   adminId: string,
-  header: AxiosRequestConfig
+  header: AxiosRequestConfig,
 ): Promise<AxiosResponse<any>> {
   const url = `${API_URL}admin/permissions/${adminId}`;
   try {
@@ -184,7 +184,7 @@ export async function getAdminPermissions(
 
 export async function FetchRequest(
   url: string,
-  options: FetchOptions = {}
+  options: FetchOptions = {},
 ): Promise<any> {
   const { method = "GET", headers = {}, body } = options;
 
@@ -217,7 +217,7 @@ export async function FetchRequest(
 export async function assignChannelToAdmin(
   adminId: string,
   channelId: string,
-  header: AxiosRequestConfig
+  header: AxiosRequestConfig,
 ): Promise<AxiosResponse<any>> {
   const url = `${API_URL}admin/channels/assign`;
   return Axios_post(url, { channelId, adminId }, header);
@@ -230,7 +230,7 @@ export async function assignVideoToUser(
   userId: string,
   channelId: string,
   videoId: string,
-  header: AxiosRequestConfig
+  header: AxiosRequestConfig,
 ): Promise<AxiosResponse<any>> {
   const url = `${API_URL}admin/user-videos/assign`;
   return Axios_post(url, { userId, channelId, videoId }, header);
@@ -240,7 +240,7 @@ export async function assignVideoToUser(
  * Fetch all videos stored on the backend (admin scope)
  */
 export async function fetchAllVideos(
-  header: AxiosRequestConfig
+  header: AxiosRequestConfig,
 ): Promise<AxiosResponse<any>> {
   const url = `${API_URL}admin/server_videos/all`;
   return Axios_get(url, header);
@@ -252,9 +252,11 @@ export async function fetchAllVideos(
  */
 export async function fetchVideosByChannel(
   channelId: string,
-  header: AxiosRequestConfig
+  header: AxiosRequestConfig,
+  page: number = 1,
+  limit: number = 30,
 ): Promise<AxiosResponse<any>> {
-  const url = `${API_URL}admin/videos/${channelId}`;
+  const url = `${API_URL}admin/videos/${channelId}?page=${page}&limit=${limit}`;
   return Axios_get(url, header);
 }
 
@@ -263,7 +265,7 @@ export async function fetchVideosByChannel(
  */
 export async function fetchUserAssignedVideos(
   userId: string,
-  header: AxiosRequestConfig
+  header: AxiosRequestConfig,
 ): Promise<AxiosResponse<any>> {
   const url = `${API_URL}admin/user-videos/${userId}`;
   return Axios_get(url, header);
@@ -276,7 +278,7 @@ export async function fetchUserAssignedVideos(
 export async function removeUserAssignedVideo(
   userId: string,
   videoId: string,
-  header: AxiosRequestConfig
+  header: AxiosRequestConfig,
 ): Promise<AxiosResponse<any>> {
   const url = `${API_URL}admin/user-videos/remove`;
   const config: AxiosRequestConfig = {
@@ -292,7 +294,7 @@ export async function removeUserAssignedVideo(
 export async function assignChannelsToAdmin(
   adminId: string,
   channelIds: string[],
-  header: AxiosRequestConfig
+  header: AxiosRequestConfig,
 ): Promise<AxiosResponse<any>> {
   const url = `${API_URL}admin/assign-channels/${adminId}`;
   return Axios_post(url, { channelIds }, header);
@@ -304,7 +306,7 @@ export async function assignChannelsToAdmin(
 export async function removeChannelFromAdmin(
   adminId: string,
   channelId: string,
-  header: AxiosRequestConfig
+  header: AxiosRequestConfig,
 ): Promise<AxiosResponse<any>> {
   const url = `${API_URL}admin/channels/remove`;
   // Axios.delete accepts a config object where `data` contains the request body
