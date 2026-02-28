@@ -23,6 +23,7 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
   const [limit, setLimit] = useState(30);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0);
 
   // Revenue state
   const [videoRevenues, setVideoRevenues] = useState<{ [id: string]: number }>(
@@ -81,10 +82,12 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
         // Extract data and pagination from response
         const items = resp.data?.data || [];
         const paginationData = resp.data?.pagination || {};
+        const total_revenue = resp.data?.totalRevenue || 0;
 
         // Set pagination state from backend metadata
         setTotalItems(paginationData.totalItems || 0);
         setTotalPages(paginationData.totalPages || 0);
+        setTotalRevenue(total_revenue);
 
         // normalize backend video shape to what UI expects
         const normalized = (items || []).map((item: any) => ({
@@ -140,14 +143,8 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
     console.log("Channels updated:", channels);
   }, [channels]);
 
-  const revenueShare = videos.reduce(
-    (s, v) => s + computeRevenueShare(Number(v.revenue || 0), user?.user?.role),
-    0,
-  );
-
-  const revenueReward = videos.reduce((s, v) => s + Number(v.revenue || 0), 0);
-
-  const taxReven = revenueReward - revenueShare;
+  const revenueShare = totalRevenue - totalRevenue * 0.1; // Example: 10% tax
+  const taxReven = totalRevenue * 0.1;
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen relative">
@@ -243,7 +240,7 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
               <div>
                 <div className="text-xs text-gray-500">Total Videos</div>
                 <div className="text-2xl font-semibold text-gray-800">
-                  {videos.length}
+                  <span className="font-semibold">{totalItems}</span> videos
                 </div>
               </div>
             </div>
@@ -260,7 +257,7 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
                 </svg>
               </div>
               <div>
-                <div className="text-xs text-gray-500">Total Revenue (80%)</div>
+                <div className="text-xs text-gray-500">Total Revenue (90%)</div>
                 <div className="text-2xl font-semibold text-gray-800">
                   ${revenueShare.toFixed(2)}
                 </div>
@@ -279,7 +276,7 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
                 </svg>
               </div>
               <div>
-                <div className="text-xs text-gray-500">Total Tax (20%)</div>
+                <div className="text-xs text-gray-500">Total Tax (10%)</div>
                 <div className="text-2xl font-semibold text-gray-800">
                   ${taxReven.toFixed(2)}
                 </div>
@@ -294,71 +291,158 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
           ) : (
             <>
               {!loadingModal && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {videos.map((video) => (
-                    <div
-                      key={video.id}
-                      className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition transform hover:-translate-y-1 relative group"
-                    >
-                      {/* Thumbnail */}
-                      <div className="relative">
-                        <img
-                          src={video.thumbnail}
-                          alt={video.title}
-                          className="w-full h-44 object-cover"
-                        />
-                        <button
-                          onClick={() =>
-                            window.open(
-                              `https://www.youtube.com/watch?v=${video.id}`,
-                              "_blank",
-                            )
-                          }
-                          className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition"
-                        >
-                          <PlayCircle className="w-14 h-14 text-white drop-shadow-lg" />
-                        </button>
-                      </div>
+                <div>
+                  <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <p className="text-gray-500 text-sm md:text-left">
+                      Showing videos{" "}
+                      <span className="font-semibold">
+                        {(currentPage - 1) * limit + 1}
+                      </span>{" "}
+                      to{" "}
+                      <span className="font-semibold">
+                        {Math.min(currentPage * limit, totalItems)}
+                      </span>{" "}
+                      of <span className="font-semibold">{totalItems}</span>
+                    </p>
 
-                      {/* Video Info */}
-                      <div className="p-4">
-                        <h4 className="text-sm font-medium text-gray-800 line-clamp-2">
-                          {video.title}
-                        </h4>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {new Date(video.publishedAt).toLocaleDateString()}
-                        </p>
+                    <div className="flex items-center gap-3 justify-end w-full md:w-auto">
+                      <button
+                        onClick={() =>
+                          setCurrentPage((p) => Math.max(1, p - 1))
+                        }
+                        disabled={currentPage === 1}
+                        className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                      >
+                        Previous
+                      </button>
 
-                        {/* Video Stats */}
-                        <div className="mt-2 space-y-1 text-xs text-gray-600">
-                          <p>Views: {(video.views || 0).toLocaleString()}</p>
-                          <p>Likes: {(video.likes || 0).toLocaleString()}</p>
-                          {video.comments > 0 && (
-                            <p>Comments: {video.comments.toLocaleString()}</p>
-                          )}
-                        </div>
+                      <div className="flex items-center gap-2">
+                        {Array.from({ length: Math.min(5, totalPages) }).map(
+                          (_, idx) => {
+                            const pageNum = currentPage - 2 + idx;
+                            if (pageNum < 1 || pageNum > totalPages)
+                              return null;
 
-                        {/* Revenue */}
-                        {videoRevenues[video.id] === undefined ? (
-                          <p className="text-sm mt-2 text-gray-400">
-                            Loading revenue...
-                          </p>
-                        ) : (
-                          <p className="text-sm mt-2 text-green-600 font-medium">
-                            Revenue: ${videoRevenues[video.id].toFixed(2)}
-                          </p>
+                            return (
+                              <button
+                                key={pageNum}
+                                onClick={() => setCurrentPage(pageNum)}
+                                className={`px-3 py-2 rounded-md transition ${
+                                  pageNum === currentPage
+                                    ? "bg-red-500 text-white font-semibold"
+                                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                                }`}
+                              >
+                                {pageNum}
+                              </button>
+                            );
+                          },
                         )}
                       </div>
+
+                      <button
+                        onClick={() =>
+                          setCurrentPage((p) => Math.min(totalPages, p + 1))
+                        }
+                        disabled={
+                          currentPage === totalPages || totalPages === 0
+                        }
+                        className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                      >
+                        Next
+                      </button>
                     </div>
-                  ))}
+
+                    <div className="flex items-center gap-3">
+                      <label
+                        htmlFor="limit-select-top"
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        Videos per page:
+                      </label>
+                      <select
+                        id="limit-select-top"
+                        value={limit}
+                        onChange={(e) => {
+                          setLimit(Number(e.target.value));
+                          setCurrentPage(1);
+                        }}
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                      >
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={30}>30</option>
+                        <option value={50}>50</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {videos.map((video) => (
+                      <div
+                        key={video.id}
+                        className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition transform hover:-translate-y-1 relative group"
+                      >
+                        {/* Thumbnail */}
+                        <div className="relative">
+                          <img
+                            src={video.thumbnail}
+                            alt={video.title}
+                            className="w-full h-44 object-cover"
+                          />
+                          <button
+                            onClick={() =>
+                              window.open(
+                                `https://www.youtube.com/watch?v=${video.id}`,
+                                "_blank",
+                              )
+                            }
+                            className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition"
+                          >
+                            <PlayCircle className="w-14 h-14 text-white drop-shadow-lg" />
+                          </button>
+                        </div>
+
+                        {/* Video Info */}
+                        <div className="p-4">
+                          <h4 className="text-sm font-medium text-gray-800 line-clamp-2">
+                            {video.title}
+                          </h4>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {new Date(video.publishedAt).toLocaleDateString()}
+                          </p>
+
+                          {/* Video Stats */}
+                          <div className="mt-2 space-y-1 text-xs text-gray-600">
+                            <p>Views: {(video.views || 0).toLocaleString()}</p>
+                            <p>Likes: {(video.likes || 0).toLocaleString()}</p>
+                            {video.comments > 0 && (
+                              <p>Comments: {video.comments.toLocaleString()}</p>
+                            )}
+                          </div>
+
+                          {/* Revenue */}
+                          {videoRevenues[video.id] === undefined ? (
+                            <p className="text-sm mt-2 text-gray-400">
+                              Loading revenue...
+                            </p>
+                          ) : (
+                            <p className="text-sm mt-2 text-green-600 font-medium">
+                              Revenue: ${videoRevenues[video.id].toFixed(2)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
               {/* Pagination Controls */}
               {!loadingModal && videos.length > 0 && (
-                <div className="mt-12 flex flex-col items-center gap-6">
+                <div className="mt-12 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                   {/* Pagination Info */}
-                  <div className="text-center text-sm text-gray-600">
+                  <div className="text-center text-sm text-gray-600 md:text-left">
                     <p>
                       Showing {(currentPage - 1) * limit + 1} to{" "}
                       {Math.min(currentPage * limit, totalItems)} of{" "}
@@ -367,7 +451,7 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
                   </div>
 
                   {/* Page Controls */}
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 justify-end w-full md:w-auto">
                     <button
                       onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
