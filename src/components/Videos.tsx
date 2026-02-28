@@ -8,7 +8,6 @@ import { fetchVideosByChannel } from "../services/api";
 import { UserAuthorization } from "../services/auth";
 import yticon from "../assets/yticon.png";
 import { ArrowRight, PlayCircle } from "lucide-react";
-import computeRevenueShare from "../utils/revenueShare";
 
 const Videos: React.FC<{ user: any }> = ({ user }) => {
   const [channels, setChannels] = useState<ChannelToken[]>([]);
