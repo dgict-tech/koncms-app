@@ -414,10 +414,6 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
                           {/* Video Stats */}
                           <div className="mt-2 space-y-1 text-xs text-gray-600">
                             <p>Views: {(video.views || 0).toLocaleString()}</p>
-                            <p>Likes: {(video.likes || 0).toLocaleString()}</p>
-                            {video.comments > 0 && (
-                              <p>Comments: {video.comments.toLocaleString()}</p>
-                            )}
                           </div>
 
                           {/* Revenue */}
