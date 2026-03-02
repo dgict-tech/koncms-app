@@ -273,7 +273,7 @@ const RevenueChart: React.FC = () => {
                       labels: {
                         usePointStyle: true,
                         padding: 20,
-                        font: { size: 14, weight: "500" },
+                        font: { size: 14 },
                         color: "#6b7280",
                       },
                     },
