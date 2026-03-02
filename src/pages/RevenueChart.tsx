@@ -130,7 +130,6 @@ const RevenueChart: React.FC = () => {
       (sum, r) => sum + Number(r.user_revenue ?? 0),
       0,
     );
-    const avgRevenue = totalRevenue / revenueList.length;
 
     // Get current month stats
     const now = new Date();
@@ -144,7 +143,22 @@ const RevenueChart: React.FC = () => {
       )
       .reduce((sum, r) => sum + Number(r.user_revenue ?? 0), 0);
 
-    return { totalRevenue, avgRevenue, thisMonthTotal };
+    // Get previous month stats
+    let prevMonth = curMonth - 1;
+    let prevYear = curYear;
+    if (prevMonth === 0) {
+      prevMonth = 12;
+      prevYear -= 1;
+    }
+    const prevMonthTotal = revenueList
+      .filter(
+        (r) =>
+          Number(r.revenue_month) === prevMonth &&
+          Number(r.revenue_year) === prevYear,
+      )
+      .reduce((sum, r) => sum + Number(r.user_revenue ?? 0), 0);
+
+    return { totalRevenue, thisMonthTotal, prevMonthTotal };
   }, [revenueList]);
 
   return (
@@ -213,11 +227,11 @@ const RevenueChart: React.FC = () => {
                     <TrendingUp className="w-5 h-5 text-purple-600" />
                   </div>
                   <span className="text-sm font-medium text-gray-600">
-                    Monthly Average
+                    Previous Month
                   </span>
                 </div>
                 <p className="text-2xl font-bold text-gray-900">
-                  ${stats.avgRevenue.toFixed(2)}
+                  ${stats.prevMonthTotal.toFixed(2)}
                 </p>
               </div>
             </div>
