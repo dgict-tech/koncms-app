@@ -142,8 +142,8 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
     console.log("Channels updated:", channels);
   }, [channels]);
 
-  const revenueShare = totalRevenue - totalRevenue * 0.1; // Example: 10% tax
-  const taxReven = totalRevenue * 0.1;
+  const taxReven = totalRevenue * 0.2;
+  const revenueShare = totalRevenue - taxReven; // Example: 20% tax
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen relative">
@@ -256,7 +256,7 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
                 </svg>
               </div>
               <div>
-                <div className="text-xs text-gray-500">Total Revenue (90%)</div>
+                <div className="text-xs text-gray-500">Total Revenue (80%)</div>
                 <div className="text-2xl font-semibold text-gray-800">
                   ${revenueShare.toFixed(2)}
                 </div>
@@ -275,7 +275,7 @@ const Videos: React.FC<{ user: any }> = ({ user }) => {
                 </svg>
               </div>
               <div>
-                <div className="text-xs text-gray-500">Total Tax (10%)</div>
+                <div className="text-xs text-gray-500">Total Tax (20%)</div>
                 <div className="text-2xl font-semibold text-gray-800">
                   ${taxReven.toFixed(2)}
                 </div>
