@@ -16,6 +16,8 @@ import {
   User2Icon,
   UserPlusIcon,
   UserCircle,
+  BarChart3,
+  Calendar,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -85,6 +87,45 @@ export default function Sidebar({ isOpen, onClose, user }: SidebarProps) {
               <span className="ml-2">Video Revenue</span>
             )}
           </NavLink>
+          {user.user.role == "user" && (
+            <NavLink
+              to="/account/revenue-chart"
+              className={({ isActive }) =>
+                `${linkClass} ${isActive ? activeClass : ""} mb-3`
+              }
+              onClick={onClose}
+            >
+              <BarChart3 size={18} />
+              <span className="ml-2">Revenue Overview</span>
+            </NavLink>
+          )}
+          {user.user.role == "user" && (
+            <NavLink
+              to="/account/revenue-breakdown?period=this"
+              className={({ isActive }) =>
+                `${linkClass} ${isActive ? activeClass : ""} mb-3`
+              }
+              onClick={onClose}
+            >
+              <Calendar size={18} />
+              <span className="ml-2">This Month</span>
+            </NavLink>
+          )}
+          {user.user.role == "user" && (
+            <NavLink
+              to="/account/revenue-breakdown?period=last"
+              className={({ isActive }) =>
+                `${linkClass} ${isActive ? activeClass : ""} mb-3`
+              }
+              onClick={onClose}
+            >
+              <Calendar size={18} />
+              <span className="ml-2">Previous Month</span>
+            </NavLink>
+          )}
+          {user.user.role == "user" && (
+            <hr className="my-3 border-red-100 border-opacity-30" />
+          )}
           {user.user.role != "user" && (
             <NavLink
               to="/account/videos"

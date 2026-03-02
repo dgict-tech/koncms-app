@@ -272,6 +272,18 @@ export async function fetchUserAssignedVideos(
 }
 
 /**
+ * Fetch per-period revenue entries for a user
+ * Backend endpoint: GET /admin/user-videos-revenue/:userId
+ */
+export async function fetchUserVideosRevenue(
+  userId: string,
+  header: AxiosRequestConfig,
+): Promise<AxiosResponse<any>> {
+  const url = `${API_URL}admin/user-videos-revenue/${userId}`;
+  return Axios_get(url, header);
+}
+
+/**
  * Remove an assigned video from a user (admin scope)
  * expected body: { userId, channelId, videoId }
  */

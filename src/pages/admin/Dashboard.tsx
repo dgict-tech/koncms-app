@@ -15,6 +15,8 @@ import AllAdminAccount from "../../components/AllAdminAccount";
 import CreateUserAccount from "../../components/CreateUserAccount";
 import AllUserAccount from "../../components/AllUserAccount";
 import RevenueAnalytics from "../../components/RevenueAnalytics";
+import RevenueBreakdown from "../RevenueBreakdown";
+import RevenueChart from "../RevenueChart";
 import ManageAdminAccount from "../../components/ManageAdminAccount";
 import ManageUserAccount from "../../components/ManageUserAccount";
 
@@ -119,6 +121,23 @@ const Dashboard: React.FC = () => {
             element={
               <AuthGuard>
                 <RevenueAnalytics />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/revenue-breakdown"
+            element={
+              <AuthGuard>
+                <RevenueBreakdown />
+              </AuthGuard>
+            }
+          />
+
+          <Route
+            path="/revenue-chart"
+            element={
+              <AuthGuard>
+                <RevenueChart />
               </AuthGuard>
             }
           />
